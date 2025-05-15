@@ -1,0 +1,32 @@
+<div style="min-height: 100vh; background-color: #0d1b2a; display: flex; justify-content: center; align-items: center; padding: 2rem;">
+  <div style="background-color: #1b263b; padding: 2rem; border-radius: 1rem; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.3);">
+    <h2 style="color: #e0e1dd; text-align: center; margin-bottom: 1.5rem;">Log in to Notova</h2>
+
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+      <div class="field" style="margin-bottom: 1rem;">
+        <%= f.label :email, style: "color: #e0e1dd;" %><br />
+        <%= f.email_field :email, autofocus: true, autocomplete: "email", style: "width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: none; background-color: #415a77; color: white;" %>
+      </div>
+
+      <div class="field" style="margin-bottom: 1rem;">
+        <%= f.label :password, style: "color: #e0e1dd;" %><br />
+        <%= f.password_field :password, autocomplete: "current-password", style: "width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: none; background-color: #415a77; color: white;" %>
+      </div>
+
+      <% if devise_mapping.rememberable? %>
+        <div class="field" style="margin-bottom: 1rem;">
+          <%= f.check_box :remember_me %>
+          <%= f.label :remember_me, style: "color: #e0e1dd;" %>
+        </div>
+      <% end %>
+
+      <div class="actions" style="text-align: center;">
+        <%= f.submit "Log in", style: "background-color: #ff4dd2; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 2rem; font-weight: bold; cursor: pointer;" %>
+      </div>
+    <% end %>
+
+    <div style="margin-top: 1rem; text-align: center;">
+      <%= render "devise/shared/links" %>
+    </div>
+  </div>
+</div>
