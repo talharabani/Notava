@@ -11,4 +11,8 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "home#index"
+  resources :plans, only: [:index]
+  
+  # Profile routes
+  get 'profile', to: 'profiles#show', as: :profile
 end

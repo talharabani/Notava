@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="h-full">
   <head>
     <title><%= content_for(:title) || "Notava" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -22,8 +22,8 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <main class="">
+  <body class="min-h-full bg-gradient-to-br from-[#0d1b2a] to-[#415a77] text-[#e0e1dd]">
+    <main class="min-h-screen">
       <%= yield %>
     </main>
   </body>

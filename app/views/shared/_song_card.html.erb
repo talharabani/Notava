@@ -1,0 +1,14 @@
+<div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
+  <div class="relative">
+    <%= image_tag song.image_url || "album_image.jpeg", class: "w-full aspect-square object-cover" %>
+    <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full">
+      <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+    </button>
+  </div>
+  <div class="p-3">
+    <h3 class="font-medium truncate"><%= song.title %></h3>
+    <p class="text-gray-400 text-sm truncate"><%= song.artist %></p>
+  </div>
+</div> 
