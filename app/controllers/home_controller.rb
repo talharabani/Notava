@@ -3,11 +3,11 @@ class HomeController < ApplicationController
     deezer_service = DeezerService.new
     
     begin
-      @new_releases = deezer_service.get_new_releases(10)
-      Rails.logger.info("New releases fetched: #{@new_releases.inspect}")
+      @new_friday_tracks = deezer_service.get_new_friday_tracks(10)
+      Rails.logger.info("New Friday tracks fetched: #{@new_friday_tracks.inspect}")
     rescue => e
-      Rails.logger.error("Error fetching new releases: #{e.message}")
-      @new_releases = { 'data' => [] }
+      Rails.logger.error("Error fetching new Friday tracks: #{e.message}")
+      @new_friday_tracks = { 'data' => [] }
     end
     
     begin

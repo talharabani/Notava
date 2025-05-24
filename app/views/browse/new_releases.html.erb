@@ -1,0 +1,125 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-950 to-cyan-800">
+  <%= render 'shared/sidebar' %>
+  
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-y-auto px-4 ml-16 md:ml-64">
+    <!-- Top Navigation Bar -->
+    <%= render 'shared/topbar' %>
+
+    <div class="py-6">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">New Releases</h1>
+        <p class="text-gray-300">Explore the latest music releases updated weekly</p>
+      </div>
+
+      <!-- New Tracks Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">New Tracks</h2>
+          <div class="flex items-center space-x-3">
+            <span class="text-sm text-gray-400">Updated <%= Date.today.strftime("%b %d") %></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <% if @new_tracks['data'] %>
+            <% @new_tracks['data'].each do |track| %>
+              <!-- Track Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" data-controller="song-element">
+                <div class="relative">
+                  <img src="<%= track['album']['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= track['title'] %>"
+                       data-action="click->song-element#playSong"
+                       data-song-element-song-value="<%= { 
+                         id: track['id'], 
+                         title: track['title'], 
+                         artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                         album: { 
+                           title: track['album']['title'], 
+                           cover_medium: track['album']['cover_medium'] 
+                         }, 
+                         preview: track['preview'] 
+                       }.to_json %>">
+                  <div class="absolute top-2 left-2 bg-cyan-500 text-xs px-2 py-1 rounded-full text-black font-medium">
+                    New
+                  </div>
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
+                          data-action="click->song-element#playSong">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer"
+                     data-action="click->song-element#playSong">
+                  <h3 class="font-medium truncate"><%= track['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= track['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- New Albums Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">New Albums</h2>
+          <div class="flex items-center space-x-3">
+            <span class="text-sm text-gray-400">Updated <%= Date.today.strftime("%b %d") %></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <% if @new_albums['data'] %>
+            <% @new_albums['data'].each do |album| %>
+              <!-- Album Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" data-controller="song-element">
+                <div class="relative">
+                  <img src="<%= album['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= album['title'] %>"
+                       data-action="click->song-element#playSong"
+                       data-song-element-song-value="<%= { 
+                         id: album['id'], 
+                         title: album['title'], 
+                         artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                         album: { 
+                           title: album['title'], 
+                           cover_medium: album['cover_medium'] 
+                         }, 
+                         preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                       }.to_json %>">
+                  <div class="absolute top-2 left-2 bg-cyan-500 text-xs px-2 py-1 rounded-full text-black font-medium">
+                    Album
+                  </div>
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
+                          data-action="click->song-element#playSong">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-medium truncate"><%= album['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= album['artist']['name'] %></p>
+                  <p class="text-xs text-cyan-400 mt-1">
+                    <%= album['tracks'] && album['tracks']['data'] ? "#{album['tracks']['data'].length} tracks" : "Album" %>
+                  </p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <%= render 'shared/player' %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('New Releases page DOM loaded');
+    
+    // Set user interaction flag for autoplay
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+  });
+</script>

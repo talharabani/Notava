@@ -1,25 +1,92 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["dropdown"]
+  static targets = ["dropdown", "input"]
   
   connect() {
     console.log("Search controller connected");
     this.debounceTimer = null;
     this.minChars = 2;
+    this.selectedIndex = -1; // Track selected result index for keyboard navigation
     
     // Close dropdown when clicking outside
     document.addEventListener('click', this.closeDropdown.bind(this));
+    
+    // Add keyboard event listener
+    if (this.hasInputTarget) {
+      this.inputTarget.addEventListener('keydown', this.handleKeydown.bind(this));
+    }
   }
   
   disconnect() {
     document.removeEventListener('click', this.closeDropdown.bind(this));
+    if (this.hasInputTarget) {
+      this.inputTarget.removeEventListener('keydown', this.handleKeydown.bind(this));
+    }
   }
   
   closeDropdown(event) {
     if (!this.element.contains(event.target)) {
       this.hideDropdown();
     }
+  }
+  
+  // Handle keyboard navigation
+  handleKeydown(event) {
+    // Only process if dropdown is visible
+    if (this.dropdownTarget.classList.contains('hidden')) {
+      return;
+    }
+    
+    const results = this.getSearchResults();
+    
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.selectedIndex = Math.min(this.selectedIndex + 1, results.length - 1);
+        this.highlightResult();
+        break;
+        
+      case 'ArrowUp':
+        event.preventDefault();
+        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+        this.highlightResult();
+        break;
+        
+      case 'Enter':
+        event.preventDefault();
+        if (this.selectedIndex >= 0 && this.selectedIndex < results.length) {
+          results[this.selectedIndex].click();
+        }
+        break;
+        
+      case 'Escape':
+        event.preventDefault();
+        this.hideDropdown();
+        break;
+    }
+  }
+  
+  // Get all search result elements
+  getSearchResults() {
+    return Array.from(this.dropdownTarget.querySelectorAll('[data-action="click->search#selectResult"]'));
+  }
+  
+  // Highlight the selected result
+  highlightResult() {
+    const results = this.getSearchResults();
+    
+    // Remove highlight from all results
+    results.forEach((result, index) => {
+      if (index === this.selectedIndex) {
+        result.classList.add('bg-gray-700');
+        
+        // Scroll into view if needed
+        result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        result.classList.remove('bg-gray-700');
+      }
+    });
   }
   
   search(event) {
@@ -58,6 +125,9 @@ export default class extends Controller {
   
   displayResults(data, query) {
     const resultsContainer = this.dropdownTarget.querySelector('#search_results');
+    
+    // Reset selected index when displaying new results
+    this.selectedIndex = -1;
     
     if (data.data && data.data.length > 0) {
       let html = `<div class="text-xs text-gray-400 mb-2 px-2">Results for "${query}"</div>`;
@@ -117,6 +187,9 @@ export default class extends Controller {
     );
     
     if (playerController) {
+      // Check if shift key is pressed to add to queue
+      const addToQueue = event.shiftKey;
+      
       // Create a synthetic event with the song data
       const customEvent = new CustomEvent('click', {
         bubbles: true,
@@ -127,7 +200,8 @@ export default class extends Controller {
       Object.defineProperty(customEvent, 'currentTarget', {
         value: {
           dataset: {
-            song: JSON.stringify(songData)
+            song: JSON.stringify(songData),
+            addToQueue: addToQueue.toString()
           }
         },
         writable: false
@@ -135,6 +209,12 @@ export default class extends Controller {
       
       // Call the playSong method on the player controller
       playerController.playSong(customEvent);
+      
+      // Show a tip about adding to queue
+      if (!localStorage.getItem('queueTipShown')) {
+        playerController.showNotification("Tip: Hold Shift while clicking to add to queue");
+        localStorage.setItem('queueTipShown', 'true');
+      }
     }
     
     this.hideDropdown();
@@ -146,5 +226,6 @@ export default class extends Controller {
   
   hideDropdown() {
     this.dropdownTarget.classList.add('hidden');
+    this.selectedIndex = -1;
   }
 } 

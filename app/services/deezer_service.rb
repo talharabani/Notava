@@ -65,6 +65,34 @@ class DeezerService
     result
   end
   
+  def get_new_friday_tracks(limit = 10)
+    # Get the latest releases and extract their tracks
+    albums_response = self.class.get("/chart/0/albums", query: { limit: 5 })
+    albums_result = parse_response(albums_response)
+    
+    tracks = []
+    
+    if albums_result['data'] && albums_result['data'].is_a?(Array)
+      albums_result['data'].each do |album|
+        album_details = get_album(album['id'])
+        if album_details['tracks'] && album_details['tracks']['data']
+          # Get up to 2 tracks from each album to reach our limit
+          album_tracks = album_details['tracks']['data'].first(2)
+          album_tracks.each do |track|
+            # Add album cover to each track
+            track['album'] ||= {}
+            track['album']['cover_medium'] = album['cover_medium']
+            track['album']['title'] = album['title']
+            tracks << track
+          end
+        end
+      end
+    end
+    
+    # Return in the same format as other methods
+    { 'data' => tracks.first(limit) }
+  end
+  
   def get_trending_tracks(limit = 10)
     # Trending tracks are essentially chart tracks
     response = self.class.get("/chart/0/tracks", query: { limit: limit })

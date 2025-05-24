@@ -1,0 +1,170 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-950 to-cyan-800">
+  <%= render 'shared/sidebar' %>
+  
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-y-auto px-4 ml-16 md:ml-64">
+    <!-- Top Navigation Bar -->
+    <%= render 'shared/topbar' %>
+
+    <div class="py-6">
+      <!-- Featured Section -->
+      <div class="mb-10">
+        <div class="relative rounded-2xl overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-indigo-900/90 to-transparent z-10"></div>
+          <img src="https://e-cdns-images.dzcdn.net/images/cover/1cac28532dc6d689f0ccba5a3b71b9d0/1000x1000-000000-80-0-0.jpg" class="w-full h-80 object-cover">
+          <div class="absolute bottom-0 left-0 p-8 z-20 w-full md:w-1/2">
+            <span class="text-cyan-400 font-medium mb-2 block">Featured Today</span>
+            <h1 class="text-4xl font-bold mb-4">Discover New Music</h1>
+            <p class="text-gray-200 mb-6">Explore curated playlists, latest releases, and music recommendations personalized just for you.</p>
+            <button class="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-2 px-6 rounded-full transition shadow-md">
+              Get Started
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trending Tracks -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Trending This Week</h2>
+          <a href="<%= popular_path %>" class="text-cyan-400 hover:text-cyan-300 text-sm font-medium">See All</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <% if @trending_tracks['data'] %>
+            <% @trending_tracks['data'].each do |track| %>
+              <!-- Track Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" data-controller="song-element">
+                <div class="relative">
+                  <img src="<%= track['album']['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= track['title'] %>"
+                       data-action="click->song-element#playSong"
+                       data-song-element-song-value="<%= { 
+                         id: track['id'], 
+                         title: track['title'], 
+                         artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                         album: { 
+                           title: track['album']['title'], 
+                           cover_medium: track['album']['cover_medium'] 
+                         }, 
+                         preview: track['preview'] 
+                       }.to_json %>">
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
+                          data-action="click->song-element#playSong">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer"
+                     data-action="click->song-element#playSong">
+                  <h3 class="font-medium truncate"><%= track['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= track['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Recommended Playlists -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Recommended Playlists</h2>
+          <a href="#" class="text-cyan-400 hover:text-cyan-300 text-sm font-medium">Browse All</a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <% if @playlists['data'] %>
+            <% @playlists['data'].each_with_index do |track, index| %>
+              <!-- Playlist Card (using track data as placeholder) -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md flex">
+                <img src="<%= track['album']['cover_medium'] %>" class="w-24 h-24 object-cover" alt="Playlist">
+                <div class="p-4 flex flex-col justify-between flex-1">
+                  <div>
+                    <h3 class="font-bold truncate">
+                      <%= ['Weekend Vibes', 'Summer Hits', 'Workout Mix', 'Chill Sessions', 'Study Focus'][index % 5] %>
+                    </h3>
+                    <p class="text-gray-400 text-sm"><%= rand(10..50) %> tracks</p>
+                  </div>
+                  <button class="bg-cyan-600/80 hover:bg-cyan-500/80 text-white text-sm py-1 px-3 rounded-full self-start mt-2">
+                    Play Now
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Genres Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Browse by Genre</h2>
+          <a href="#" class="text-cyan-400 hover:text-cyan-300 text-sm font-medium">See All</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <% if @genres['data'] %>
+            <% colors = ['bg-blue-800/50', 'bg-purple-700/50', 'bg-cyan-700/50', 'bg-red-600/50', 'bg-green-700/50', 'bg-pink-700/50'] %>
+            <% @genres['data'].first(12).each_with_index do |genre, index| %>
+              <div class="<%= colors[index % colors.length] %> rounded-lg p-6 text-center transition-transform hover:scale-105 border border-white/10 backdrop-blur-sm shadow-md">
+                <h3 class="font-bold"><%= genre['name'] %></h3>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- New Releases Preview -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">New Releases for You</h2>
+          <a href="<%= new_releases_path %>" class="text-cyan-400 hover:text-cyan-300 text-sm font-medium">See All</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <% if @new_releases['data'] %>
+            <% @new_releases['data'].each do |track| %>
+              <!-- Track Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" data-controller="song-element">
+                <div class="relative">
+                  <img src="<%= track['album']['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= track['title'] %>"
+                       data-action="click->song-element#playSong"
+                       data-song-element-song-value="<%= { 
+                         id: track['id'], 
+                         title: track['title'], 
+                         artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                         album: { 
+                           title: track['album']['title'], 
+                           cover_medium: track['album']['cover_medium'] 
+                         }, 
+                         preview: track['preview'] 
+                       }.to_json %>">
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
+                          data-action="click->song-element#playSong">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer"
+                     data-action="click->song-element#playSong">
+                  <h3 class="font-medium truncate"><%= track['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= track['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <%= render 'shared/player' %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Discover page DOM loaded');
+    
+    // Set user interaction flag for autoplay
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+  });
+</script> 

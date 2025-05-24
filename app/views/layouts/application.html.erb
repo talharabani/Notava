@@ -24,17 +24,39 @@
     <script>
       // Handle user interaction for autoplay
       document.addEventListener('DOMContentLoaded', function() {
-        const interactionEvents = ['mousedown', 'keydown', 'touchstart'];
+        const interactionEvents = ['mousedown', 'keydown', 'touchstart', 'click'];
         
         function handleUserInteraction() {
           document.documentElement.setAttribute('data-user-interacted', 'true');
+          console.log("User interaction detected, autoplay should work now");
+          
+          // Try to resume any pending audio playback
+          if (window.playerController && window.playerController.resumePendingPlayback) {
+            window.playerController.resumePendingPlayback();
+          }
+          
+          // Remove event listeners once interaction is detected
           interactionEvents.forEach(event => {
             document.removeEventListener(event, handleUserInteraction);
           });
         }
         
+        // Add event listeners for user interaction
         interactionEvents.forEach(event => {
           document.addEventListener(event, handleUserInteraction);
+        });
+        
+        // Add keyboard navigation support for search
+        document.addEventListener('keydown', function(event) {
+          // If Escape is pressed, close any open dropdowns
+          if (event.key === 'Escape') {
+            const dropdowns = document.querySelectorAll('[data-search-target="dropdown"]');
+            dropdowns.forEach(dropdown => {
+              if (!dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+              }
+            });
+          }
         });
       });
     </script>

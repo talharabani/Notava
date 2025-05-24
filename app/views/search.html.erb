@@ -3,212 +3,92 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     console.log('Search page DOM loaded');
-    const playerBar = document.getElementById('player-bar');
-    console.log('Player bar exists:', !!playerBar);
     
-    // Check if Stimulus is loaded
-    console.log('Stimulus loaded:', typeof window.Stimulus !== 'undefined');
-    
-    // Set user interaction flag
+    // Set user interaction flag for autoplay
     document.documentElement.setAttribute('data-user-interacted', 'true');
     
     // Find all song play buttons
     const playButtons = document.querySelectorAll('[data-action="click->player#playSong"]');
-    console.log('Play buttons found in search:', playButtons.length);
+    console.log('Play buttons found on search page:', playButtons.length);
     
-    // Get the player controller instance
-    let playerController = null;
-    if (window.Stimulus) {
-      try {
-        playerController = window.Stimulus.getControllerForElementAndIdentifier(
-          document.getElementById('player-bar'),
-          'player'
-        );
-        console.log('Player controller found:', !!playerController);
-      } catch (e) {
-        console.error('Error getting player controller:', e);
-      }
-    }
-    
-    // Create a fallback audio player if needed
-    let fallbackAudio = null;
-    let currentSong = null;
-    
-    function updatePlayerUI(song) {
-      const songTitle = document.querySelector('.song-title');
-      const artistName = document.querySelector('.artist-name');
-      const albumCover = document.querySelector('.album-cover');
+    // Make sure the player controller is connected to each play button
+    if (playButtons.length > 0) {
+      // Get the player controller instance
+      const playerBar = document.getElementById('player-bar');
       
-      if (songTitle) songTitle.textContent = song.title;
-      if (artistName) artistName.textContent = song.artist.name;
-      if (albumCover) albumCover.src = song.album?.cover_medium || '';
-      
-      // Update play/pause icons
-      const playIcon = document.querySelector('[data-player-target="playIcon"]');
-      const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
-      
-      if (playIcon) playIcon.classList.add('hidden');
-      if (pauseIcon) pauseIcon.classList.remove('hidden');
-    }
-    
-    function updateProgress() {
-      if (!fallbackAudio) return;
-      
-      const progressBar = document.querySelector('[data-player-target="progressBar"]');
-      const currentTimeElement = document.querySelector('.current-time');
-      
-      if (progressBar && !isNaN(fallbackAudio.duration)) {
-        const progress = (fallbackAudio.currentTime / fallbackAudio.duration) * 100;
-        progressBar.style.width = `${progress}%`;
-      }
-      
-      if (currentTimeElement) {
-        currentTimeElement.textContent = formatTime(fallbackAudio.currentTime);
-      }
-    }
-    
-    function updateDuration() {
-      if (!fallbackAudio) return;
-      
-      const durationElement = document.querySelector('.duration');
-      if (durationElement && !isNaN(fallbackAudio.duration)) {
-        durationElement.textContent = formatTime(fallbackAudio.duration);
-      }
-    }
-    
-    function formatTime(seconds) {
-      if (!seconds || isNaN(seconds)) return "0:00";
-      
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = Math.floor(seconds % 60);
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-    
-    function playFallbackAudio(song) {
-      if (!song.preview) {
-        console.error('No preview URL found for song:', song);
-        return;
-      }
-      
-      console.log('Using fallback audio player for:', song.title);
-      
-      if (!fallbackAudio) {
-        fallbackAudio = new Audio();
-        
-        // Add event listeners
-        fallbackAudio.addEventListener('timeupdate', updateProgress);
-        fallbackAudio.addEventListener('loadedmetadata', updateDuration);
-        fallbackAudio.addEventListener('ended', function() {
-          const playIcon = document.querySelector('[data-player-target="playIcon"]');
-          const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
-          
-          if (playIcon) playIcon.classList.remove('hidden');
-          if (pauseIcon) pauseIcon.classList.add('hidden');
-        });
-      } else {
-        fallbackAudio.pause();
-      }
-      
-      fallbackAudio.src = song.preview;
-      fallbackAudio.volume = 0.7;
-      
-      // Update UI
-      updatePlayerUI(song);
-      currentSong = song;
-      
-      // Play the audio
-      const playPromise = fallbackAudio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log('Fallback audio playing successfully');
-          })
-          .catch(error => {
-            console.error('Error playing fallback audio:', error);
-          });
-      }
-      
-      // Save to localStorage
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('currentSong', JSON.stringify(song));
-      }
-    }
-    
-    // Add click event listeners to all song play buttons
-    playButtons.forEach((button, index) => {
-      const songData = button.dataset.song;
-      if (songData) {
-        try {
-          const song = JSON.parse(songData);
-          if (!song.preview) {
-            console.warn(`Button ${index} has no preview URL:`, song);
-          }
-        } catch (e) {
-          console.error(`Error parsing song data for button ${index}:`, e);
-        }
-      }
-      
-      // Add a click handler that will work regardless of Stimulus
-      button.addEventListener('click', function(event) {
-        console.log(`Play button ${index} clicked in search`);
-        
-        try {
-          const song = JSON.parse(this.dataset.song);
-          console.log('Song data:', song);
-          
-          // Try to use the Stimulus controller if available
-          if (playerController && typeof playerController.playSong === 'function') {
-            console.log('Using Stimulus controller to play song');
-            // Create a synthetic event with currentTarget
-            const syntheticEvent = { currentTarget: this };
-            playerController.playSong(syntheticEvent);
+      if (playerBar) {
+        // Wait a bit to ensure controllers are initialized
+        setTimeout(() => {
+          // Check if player controller exists
+          if (window.playerController) {
+            console.log('Global player controller found, ready to play songs');
           } else {
-            // Fallback to our custom implementation
-            console.log('Using fallback player to play song');
-            playFallbackAudio(song);
+            console.warn('Global player controller not found, trying to initialize');
+            
+            // Try to find Stimulus application and player controller
+            const application = window.Stimulus;
+            if (application) {
+              const playerController = application.getControllerForElementAndIdentifier(playerBar, 'player');
+              if (playerController) {
+                window.playerController = playerController;
+                console.log('Player controller initialized from Stimulus application');
+              }
+            }
           }
-        } catch (e) {
-          console.error('Error playing song:', e);
-        }
-      });
-    });
-    
-    // Add handler for the play/pause button in the player bar
-    const togglePlayButton = document.querySelector('[data-action="click->player#togglePlay"]');
-    if (togglePlayButton) {
-      togglePlayButton.addEventListener('click', function() {
-        if (!fallbackAudio) return;
-        
-        if (fallbackAudio.paused) {
-          fallbackAudio.play();
-          const playIcon = document.querySelector('[data-player-target="playIcon"]');
-          const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
           
-          if (playIcon) playIcon.classList.add('hidden');
-          if (pauseIcon) pauseIcon.classList.remove('hidden');
-        } else {
-          fallbackAudio.pause();
-          const playIcon = document.querySelector('[data-player-target="playIcon"]');
-          const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
-          
-          if (playIcon) playIcon.classList.remove('hidden');
-          if (pauseIcon) pauseIcon.classList.add('hidden');
-        }
-      });
-    }
-    
-    // Add handler for the seek bar
-    const seekBar = document.querySelector('[data-action="click->player#seek"]');
-    if (seekBar) {
-      seekBar.addEventListener('click', function(event) {
-        if (!fallbackAudio || isNaN(fallbackAudio.duration)) return;
-        
-        const rect = this.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const percentage = x / rect.width;
-        fallbackAudio.currentTime = percentage * fallbackAudio.duration;
-      });
+          // Add click event listeners to all play buttons for proper handling
+          playButtons.forEach((button, index) => {
+            // Ensure the click event properly triggers playSong
+            button.addEventListener('click', function(event) {
+              console.log(`Search page: Play button ${index} clicked`);
+              
+              // If the Stimulus controller didn't handle it, handle it manually
+              if (window.playerController && !event.defaultPrevented) {
+                const songData = this.dataset.song;
+                if (songData) {
+                  console.log('Manually playing song via playerController');
+                  
+                  // Create a synthetic event
+                  const customEvent = new CustomEvent('click', {
+                    bubbles: true,
+                    cancelable: true
+                  });
+                  
+                  // Add the dataset property to the event
+                  Object.defineProperty(customEvent, 'currentTarget', {
+                    value: {
+                      dataset: {
+                        song: songData
+                      }
+                    },
+                    writable: false
+                  });
+                  
+                  // Call the playSong method on the player controller
+                  window.playerController.playSong(customEvent);
+                }
+              }
+            });
+            
+            // Check for missing preview URLs
+            const songData = button.dataset.song;
+            if (songData) {
+              try {
+                const song = JSON.parse(songData);
+                if (!song.preview) {
+                  console.warn(`Button ${index} has no preview URL:`, song);
+                }
+              } catch (e) {
+                console.error(`Error parsing song data for button ${index}:`, e);
+              }
+            }
+          });
+        }, 500); // Wait 500ms to ensure everything is loaded
+      } else {
+        console.error('Player bar element not found on the page');
+      }
+    } else {
+      console.warn('No play buttons found on the search page');
     }
   });
 </script> 

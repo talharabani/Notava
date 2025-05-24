@@ -1,0 +1,138 @@
+<!-- Player Bar -->
+<div id="player-bar" class="fixed bottom-0 left-0 right-0 bg-indigo-950/90 backdrop-blur-sm border-t border-cyan-900/30 p-4 z-50 shadow-lg" data-controller="player">
+  <!-- Audio element is created dynamically in JavaScript -->
+  
+  <div class="container mx-auto flex items-center justify-between">
+    <!-- Song Info -->
+    <div class="flex items-center w-1/4">
+      <img src="" alt="Album Cover" class="album-cover w-12 h-12 object-cover rounded mr-3">
+      <div>
+        <h4 class="song-title text-sm font-medium">Select a song to play</h4>
+        <p class="artist-name text-xs text-gray-400">-</p>
+      </div>
+    </div>
+    
+    <!-- Player Controls -->
+    <div class="flex flex-col items-center w-2/4">
+      <div class="flex items-center space-x-4 mb-2">
+        <!-- Shuffle Button -->
+        <button class="text-cyan-400 hover:text-cyan-300 cursor-pointer" data-action="click->player#toggleShuffle">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm0.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+          </svg>
+        </button>
+        
+        <!-- Previous Button -->
+        <button class="text-cyan-400 hover:text-cyan-300 cursor-pointer" data-action="click->player#previous">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
+        </button>
+        
+        <!-- Play/Pause Button -->
+        <button class="text-indigo-950 bg-cyan-400 rounded-full p-2 hover:bg-cyan-300 cursor-pointer shadow-md" data-action="click->player#togglePlay">
+          <svg class="w-6 h-6" data-player-target="playIcon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="w-6 h-6 hidden" data-player-target="pauseIcon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+        </button>
+        
+        <!-- Next Button -->
+        <button class="text-cyan-400 hover:text-cyan-300 cursor-pointer" data-action="click->player#next">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
+        </button>
+        
+        <!-- Repeat Button -->
+        <button class="text-cyan-400 hover:text-cyan-300 cursor-pointer" data-action="click->player#toggleRepeat">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Progress Bar -->
+      <div class="w-full flex items-center space-x-2">
+        <span class="current-time text-xs text-cyan-400">0:00</span>
+        <div class="flex-1 h-1 bg-indigo-800 rounded-full cursor-pointer shadow-inner" data-action="click->player#seek">
+          <div class="h-full bg-cyan-500 rounded-full" data-player-target="progressBar" style="width: 0%"></div>
+        </div>
+        <span class="duration text-xs text-cyan-400">0:00</span>
+      </div>
+    </div>
+    
+    <!-- Volume Control -->
+    <div class="flex items-center w-1/4 justify-end">
+      <svg class="w-5 h-5 text-cyan-400 mr-2" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+      <div class="w-24 h-1 bg-indigo-800 rounded-full cursor-pointer shadow-inner" data-action="click->player#adjustVolume">
+        <div class="h-full bg-cyan-500 rounded-full volume-bar" data-player-target="volumeBar" style="width: 70%"></div>
+      </div>
+      
+      <!-- Queue Button -->
+      <button class="ml-4 text-cyan-400 hover:text-cyan-300 cursor-pointer" data-action="click->player#toggleQueuePanel" title="Queue">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Queue Panel -->
+<div class="queue-panel hidden fixed right-0 bottom-20 w-80 bg-indigo-950/90 backdrop-blur-sm rounded-t-lg shadow-lg z-50 border border-cyan-900/30" data-player-target="queuePanel">
+  <div class="flex justify-between items-center p-4 border-b border-cyan-900/30">
+    <h3 class="text-cyan-300 font-medium">Queue</h3>
+    <div class="flex space-x-2">
+      <button class="text-cyan-400 hover:text-cyan-300 text-xs" data-action="click->player#clearQueue">Clear Queue</button>
+      <button class="text-cyan-400 hover:text-cyan-300" data-action="click->player#toggleQueuePanel">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="queue-items max-h-80 overflow-y-auto p-2" data-player-target="queueItems">
+    <div class="text-center text-gray-500 text-sm py-4">No songs in queue</div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Player partial loaded');
+    
+    // Set user interaction flag for autoplay
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+    
+    // Get the player controller instance
+    const playerBar = document.getElementById('player-bar');
+    
+    if (playerBar) {
+      // Wait a bit to ensure controllers are initialized
+      setTimeout(() => {
+        // Check if player controller exists
+        if (window.playerController) {
+          console.log('Global player controller found, ready to play songs');
+        } else {
+          console.warn('Global player controller not found, trying to initialize');
+          
+          // Try to find Stimulus application and player controller
+          const application = window.Stimulus;
+          if (application) {
+            const playerController = application.getControllerForElementAndIdentifier(playerBar, 'player');
+            if (playerController) {
+              window.playerController = playerController;
+              console.log('Player controller initialized from Stimulus application');
+            }
+          }
+        }
+      }, 500); // Wait 500ms to ensure everything is loaded
+    } else {
+      console.error('Player bar element not found on the page');
+    }
+  });
+</script> 

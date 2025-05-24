@@ -19,6 +19,20 @@ Rails.application.routes.draw do
   # Search route
   get 'search', to: 'home#search', as: :search
   
+   # Browse section routes
+  get 'discover', to: 'browse#discover', as: :discover
+  get 'new_releases', to: 'browse#new_releases', as: :new_releases
+  get 'popular', to: 'browse#popular', as: :popular
+  get 'charts', to: 'browse#charts', as: :charts
+  get 'radio', to: 'browse#radio', as: :radio
+  get 'wishlist', to: 'browse#wishlist', as: :wishlist
+  
+  # Your Music section routes
+  get 'songs', to: 'library#songs', as: :songs
+  get 'albums', to: 'library#albums', as: :albums
+  get 'artists', to: 'library#artists', as: :artists
+  get 'history', to: 'library#history', as: :history
+  
   # Music API routes
   resources :music, only: [] do
     collection do

@@ -1,0 +1,153 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-950 to-cyan-800">
+  <%= render 'shared/sidebar' %>
+  
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-y-auto px-4 ml-16 md:ml-64">
+    <!-- Top Navigation Bar -->
+    <%= render 'shared/topbar' %>
+
+    <div class="py-6">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">Your Songs</h1>
+        <p class="text-gray-300">Access your favorite tracks and playlists</p>
+      </div>
+
+      <!-- My Playlists Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">My Playlists</h2>
+          <button class="text-cyan-400 hover:text-cyan-300 text-sm font-medium flex items-center">
+            <svg class="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            Create Playlist
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <% if @playlists.present? %>
+            <% @playlists.each do |playlist| %>
+              <!-- Playlist Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md">
+                <div class="relative">
+                  <img src="<%= playlist['picture_medium'] %>" class="w-full aspect-square object-cover" alt="<%= playlist['title'] %>">
+                  <div class="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-950/80 flex items-end">
+                    <div class="p-4 w-full">
+                      <h3 class="font-bold text-lg"><%= playlist['title'] %></h3>
+                      <p class="text-gray-300 text-sm"><%= playlist['nb_tracks'] %> tracks</p>
+                    </div>
+                  </div>
+                  <button class="absolute right-3 bottom-3 bg-cyan-500 rounded-full p-3 shadow-lg hover:bg-cyan-400 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-950" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+          
+          <!-- Create New Playlist Card -->
+          <div class="bg-indigo-900/20 backdrop-blur-sm border border-cyan-900/10 border-dashed rounded-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer flex flex-col items-center justify-center aspect-square">
+            <svg class="w-12 h-12 text-cyan-500/70 mb-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            <p class="font-medium text-cyan-300">Create Playlist</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Library Tracks Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Library Tracks</h2>
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <input type="text" placeholder="Filter" class="bg-indigo-900/50 backdrop-blur-sm py-1.5 pl-8 pr-4 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-cyan-400 border border-cyan-900/40">
+              <svg class="absolute left-2.5 top-2 w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+            </div>
+            <select class="bg-indigo-900/50 backdrop-blur-sm py-1.5 px-4 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-cyan-400 border border-cyan-900/40">
+              <option>Recently Added</option>
+              <option>Alphabetical</option>
+              <option>Most Played</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Tracks Table -->
+        <div class="bg-indigo-900/30 backdrop-blur-sm rounded-lg border border-cyan-900/20 overflow-hidden shadow-md">
+          <table class="min-w-full divide-y divide-cyan-900/30">
+            <thead class="bg-indigo-950/50">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-10">#</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Title</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Artist</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Album</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-20">Duration</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-16"></th>
+              </tr>
+            </thead>
+            <tbody class="bg-indigo-900/10 divide-y divide-cyan-900/30" data-controller="song-element">
+              <% if @library_tracks['data'] %>
+                <% @library_tracks['data'].each_with_index do |track, index| %>
+                  <tr class="hover:bg-indigo-800/30 cursor-pointer transition"
+                      data-action="click->song-element#playSong"
+                      data-song-element-song-value="<%= { 
+                        id: track['id'], 
+                        title: track['title'], 
+                        artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                        album: { 
+                          title: track['album']['title'], 
+                          cover_medium: track['album']['cover_medium'] 
+                        }, 
+                        preview: track['preview'] 
+                      }.to_json %>">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400"><%= index + 1 %></td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <img src="<%= track['album']['cover_medium'] %>" class="w-10 h-10 rounded object-cover mr-3" alt="<%= track['title'] %>">
+                        <span class="font-medium"><%= track['title'] %></span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-300"><%= track['artist']['name'] %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-300 truncate max-w-xs"><%= track['album']['title'] %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-400">
+                      <%= track['duration'] ? "#{track['duration'] / 60}:#{(track['duration'] % 60).to_s.rjust(2, '0')}" : "0:30" %>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                      <button class="text-gray-400 hover:text-cyan-400">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="6" class="px-4 py-8 text-center text-gray-400">
+                    No tracks in your library yet. Start by adding some music!
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <%= render 'shared/player' %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Songs page DOM loaded');
+    
+    // Set user interaction flag for autoplay
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+  });
+</script> 

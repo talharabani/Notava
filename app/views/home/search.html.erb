@@ -87,7 +87,10 @@
             <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
               <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </svg>
-            <%= f.text_field :query, value: params[:query], placeholder: "Search for songs, artists, or albums", class: "bg-gray-800 py-2 pl-10 pr-4 rounded-full w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500", data: { action: "input->search#search" } %>
+            <%= f.text_field :query, value: params[:query], placeholder: "Search for songs, artists, or albums", 
+                             class: "bg-gray-800 py-2 pl-10 pr-4 rounded-full w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500", 
+                             data: { action: "input->search#search keydown->search#handleKeydown", search_target: "input" }, 
+                             autocomplete: "off" %>
           </div>
           <div id="search_dropdown" class="hidden absolute left-0 right-0 mt-2 bg-gray-800 rounded-lg shadow-lg overflow-hidden z-50 max-h-96 overflow-y-auto" data-search-target="dropdown">
             <div id="search_results" class="p-2">
@@ -136,8 +139,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <% @results['data'].each do |track| %>
             <div class="bg-gray-800 rounded-lg overflow-hidden flex items-center p-3 hover:bg-gray-700 transition cursor-pointer"
-                 data-action="click->player#playSong"
-                 data-song="<%= { 
+                 data-controller="song-element"
+                 data-song-element-song-value="<%= { 
                    id: track['id'], 
                    title: track['title'], 
                    artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
@@ -146,7 +149,8 @@
                      cover_medium: track['album']['cover_medium'] 
                    }, 
                    preview: track['preview'] 
-                 }.to_json %>">
+                 }.to_json %>"
+                 data-action="click->song-element#playSong">
               <img src="<%= track['album']['cover_medium'] %>" class="w-16 h-16 object-cover rounded mr-4 cursor-pointer" alt="<%= track['title'] %>">
               <div class="flex-1 min-w-0">
                 <h3 class="font-medium truncate"><%= track['title'] %></h3>
@@ -154,17 +158,7 @@
                 <p class="text-gray-500 text-xs truncate"><%= track['album']['title'] %></p>
               </div>
               <button class="ml-4 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
-                      data-action="click->player#playSong"
-                      data-song="<%= { 
-                        id: track['id'], 
-                        title: track['title'], 
-                        artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
-                        album: { 
-                          title: track['album']['title'], 
-                          cover_medium: track['album']['cover_medium'] 
-                        }, 
-                        preview: track['preview'] 
-                      }.to_json %>">
+                      data-action="click->song-element#playSong">
                 <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z"/>
                 </svg>
@@ -263,3 +257,96 @@
   </div>
 </div>
 </div> 
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Search page DOM loaded');
+    
+    // Set user interaction flag for autoplay
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+    
+    // Find all song play buttons
+    const playButtons = document.querySelectorAll('[data-action="click->player#playSong"]');
+    console.log('Play buttons found on search page:', playButtons.length);
+    
+    // Make sure the player controller is connected to each play button
+    if (playButtons.length > 0) {
+      // Get the player controller instance
+      const playerBar = document.getElementById('player-bar');
+      
+      if (playerBar) {
+        // Wait a bit to ensure controllers are initialized
+        setTimeout(() => {
+          // Check if player controller exists
+          if (window.playerController) {
+            console.log('Global player controller found, ready to play songs');
+          } else {
+            console.warn('Global player controller not found, trying to initialize');
+            
+            // Try to find Stimulus application and player controller
+            const application = window.Stimulus;
+            if (application) {
+              const playerController = application.getControllerForElementAndIdentifier(playerBar, 'player');
+              if (playerController) {
+                window.playerController = playerController;
+                console.log('Player controller initialized from Stimulus application');
+              }
+            }
+          }
+          
+          // Add click event listeners to all play buttons for proper handling
+          playButtons.forEach((button, index) => {
+            // Ensure the click event properly triggers playSong
+            button.addEventListener('click', function(event) {
+              console.log(`Search page: Play button ${index} clicked`);
+              
+              // If the Stimulus controller didn't handle it, handle it manually
+              if (window.playerController && !event.defaultPrevented) {
+                const songData = this.dataset.song;
+                if (songData) {
+                  console.log('Manually playing song via playerController');
+                  
+                  // Create a synthetic event
+                  const customEvent = new CustomEvent('click', {
+                    bubbles: true,
+                    cancelable: true
+                  });
+                  
+                  // Add the dataset property to the event
+                  Object.defineProperty(customEvent, 'currentTarget', {
+                    value: {
+                      dataset: {
+                        song: songData
+                      }
+                    },
+                    writable: false
+                  });
+                  
+                  // Call the playSong method on the player controller
+                  window.playerController.playSong(customEvent);
+                }
+              }
+            });
+            
+            // Check for missing preview URLs
+            const songData = button.dataset.song;
+            if (songData) {
+              try {
+                const song = JSON.parse(songData);
+                if (!song.preview) {
+                  console.warn(`Button ${index} has no preview URL:`, song);
+                }
+              } catch (e) {
+                console.error(`Error parsing song data for button ${index}:`, e);
+              }
+            }
+          });
+        }, 500); // Wait 500ms to ensure everything is loaded
+      } else {
+        console.error('Player bar element not found on the page');
+      }
+    } else {
+      console.warn('No play buttons found on the search page');
+    }
+  });
+</script> 

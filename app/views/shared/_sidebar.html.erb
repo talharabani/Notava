@@ -1,0 +1,107 @@
+<!-- Sidebar Navigation -->
+<div class="w-16 md:w-64 bg-black/30 backdrop-blur-sm flex-shrink-0 overflow-y-auto fixed h-screen z-30">
+  <div class="p-4">
+    <div class="flex items-center mb-6">
+      <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/>
+      </svg>
+      <span class="text-xl font-bold ml-2 hidden md:block">Notava</span>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Discover Section -->
+      <div>
+        <p class="text-xs text-gray-400 mb-2 hidden md:block">BROWSE</p>
+        <ul class="space-y-3">
+          <li>
+            <%= link_to discover_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(discover_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Discover</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to new_releases_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(new_releases_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">New Releases</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to popular_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(popular_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 6v8h3v-8h-3zm-5 8h3V6h-3v8zm-5 0h3V6H6v8zM2 20h20v-2H2v2zm0-10V4h20v6H2z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Popular</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to charts_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(charts_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm16 8h-4v-6h4v6z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Charts</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to radio_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(radio_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Radio & Podcasts</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to wishlist_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(wishlist_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Wishlist</span>
+            <% end %>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Your Music Section -->
+      <div>
+        <p class="text-xs text-gray-400 mb-2 hidden md:block">YOUR MUSIC</p>
+        <ul class="space-y-3">
+          <li>
+            <%= link_to songs_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(songs_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Songs</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to albums_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(albums_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Albums</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to artists_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(artists_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">Artists</span>
+            <% end %>
+          </li>
+          <li>
+            <%= link_to history_path, class: "flex items-center py-1 text-gray-300 hover:text-white #{'text-cyan-400' if current_page?(history_path)}" do %>
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+              </svg>
+              <span class="ml-3 hidden md:block">History</span>
+            <% end %>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 
