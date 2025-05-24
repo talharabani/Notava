@@ -114,11 +114,20 @@
   <div class="flex-1 flex flex-col overflow-y-auto px-4">
     <!-- Top Navigation Bar -->
     <div class="bg-gray-900 py-2 flex items-center justify-between border-b border-gray-800">
-      <div class="relative flex items-center flex-1 max-w-3xl mx-4">
-        <svg class="absolute left-3 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-        </svg>
-        <input type="text" placeholder="Search for songs, artists, or albums" class="bg-gray-800 py-2 pl-10 pr-4 rounded-full w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+      <div class="relative flex items-center flex-1 max-w-3xl mx-4" data-controller="search">
+        <%= form_with url: search_path, method: :get, class: "w-full", data: { turbo_frame: "search_results", action: "submit->search#submit" } do |f| %>
+          <div class="relative">
+            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <%= f.text_field :query, placeholder: "Search for songs, artists, or albums", class: "bg-gray-800 py-2 pl-10 pr-4 rounded-full w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500", data: { action: "input->search#search" } %>
+          </div>
+          <div id="search_dropdown" class="hidden absolute left-0 right-0 mt-2 bg-gray-800 rounded-lg shadow-lg overflow-hidden z-50 max-h-96 overflow-y-auto" data-search-target="dropdown">
+            <div id="search_results" class="p-2">
+              <!-- Search results will appear here -->
+            </div>
+          </div>
+        <% end %>
       </div>
       <div class="flex items-center space-x-4">
         <% if user_signed_in? %>
@@ -157,70 +166,126 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold">New Music Friday</h2>
           <div class="flex space-x-2">
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-              </svg>
-            </button>
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-              </svg>
-            </button>
+            <!-- Removed navigation buttons as they're not functional -->
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <!-- Music Card -->
-          <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
-            <div class="relative">
-              <%= image_tag "album_image.jpeg", class: "w-full aspect-square object-cover" %>
-              <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full">
-                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-            </div>
-            <div class="p-3">
-              <h3 class="font-medium truncate">Burning Blue</h3>
-              <p class="text-gray-400 text-sm truncate">Martin Blue Scientists</p>
-            </div>
-          </div>
+          <% if @new_releases['data'] %>
+            <% @new_releases['data'].each do |album| %>
+              <!-- Music Card -->
+              <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
+                <div class="relative">
+                  <img src="<%= album['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= album['title'] %>"
+                       data-action="click->player#playSong"
+                       data-song="<%= { 
+                         id: album['id'], 
+                         title: album['title'], 
+                         artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                         album: { 
+                           title: album['title'], 
+                           cover_medium: album['cover_medium'] 
+                         }, 
+                         preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                       }.to_json %>">
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer" 
+                          data-action="click->player#playSong"
+                          data-song="<%= { 
+                            id: album['id'], 
+                            title: album['title'], 
+                            artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                            album: { 
+                              title: album['title'], 
+                              cover_medium: album['cover_medium'] 
+                            }, 
+                            preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                          }.to_json %>">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer" 
+                     data-action="click->player#playSong"
+                     data-song="<%= { 
+                       id: album['id'], 
+                       title: album['title'], 
+                       artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                       album: { 
+                         title: album['title'], 
+                         cover_medium: album['cover_medium'] 
+                       }, 
+                       preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                     }.to_json %>">
+                  <h3 class="font-medium truncate"><%= album['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= album['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
         </div>
       </div>
 
       <!-- New Releases Section -->
       <div class="mb-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold">New Releases</h2>
+          <h2 class="text-xl font-bold">Trending Tracks</h2>
           <div class="flex space-x-2">
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-              </svg>
-            </button>
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-              </svg>
-            </button>
+            <!-- Removed navigation buttons as they're not functional -->
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <!-- Album Card (Example) -->
-          <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
-            <div class="relative">
-              <%= image_tag "album_image.jpeg", class: "w-full aspect-square object-cover" %>
-              <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full">
-                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-            </div>
-            <div class="p-3">
-              <h3 class="font-medium text-sm truncate">THE TORTURED POETS DEPARTMENT</h3>
-              <p class="text-gray-400 text-sm truncate">Taylor Smith</p>
-            </div>
-          </div>
+          <% if @trending_tracks['data'] %>
+            <% @trending_tracks['data'].each do |track| %>
+              <!-- Track Card -->
+              <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
+                <div class="relative">
+                  <img src="<%= track['album']['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= track['title'] %>"
+                       data-action="click->player#playSong"
+                       data-song="<%= { 
+                         id: track['id'], 
+                         title: track['title'], 
+                         artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                         album: { 
+                           title: track['album']['title'], 
+                           cover_medium: track['album']['cover_medium'] 
+                         }, 
+                         preview: track['preview'] 
+                       }.to_json %>">
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
+                          data-action="click->player#playSong"
+                          data-song="<%= { 
+                            id: track['id'], 
+                            title: track['title'], 
+                            artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                            album: { 
+                              title: track['album']['title'], 
+                              cover_medium: track['album']['cover_medium'] 
+                            }, 
+                            preview: track['preview'] 
+                          }.to_json %>">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer"
+                     data-action="click->player#playSong"
+                     data-song="<%= { 
+                       id: track['id'], 
+                       title: track['title'], 
+                       artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                       album: { 
+                         title: track['album']['title'], 
+                         cover_medium: track['album']['cover_medium'] 
+                       }, 
+                       preview: track['preview'] 
+                     }.to_json %>">
+                  <h3 class="font-medium truncate"><%= track['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= track['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
         </div>
       </div>
 
@@ -229,34 +294,62 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold">Popular Tracks</h2>
           <div class="flex space-x-2">
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-              </svg>
-            </button>
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-              </svg>
-            </button>
+            <!-- Removed navigation buttons as they're not functional -->
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <!-- Track Card (Example) -->
-          <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
-            <div class="relative">
-              <%= image_tag "album_image.jpeg", class: "w-full aspect-square object-cover" %>
-              <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full">
-                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-            </div>
-            <div class="p-3">
-              <h3 class="font-medium truncate">BIRDS OF A FEATHER</h3>
-              <p class="text-gray-400 text-sm truncate">Billie Ellish</p>
-            </div>
-          </div>
+          <% if @chart_tracks['data'] %>
+            <% @chart_tracks['data'].each do |track| %>
+              <!-- Track Card -->
+              <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
+                <div class="relative">
+                  <img src="<%= track['album']['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= track['title'] %>"
+                       data-action="click->player#playSong"
+                       data-song="<%= { 
+                         id: track['id'], 
+                         title: track['title'], 
+                         artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                         album: { 
+                           title: track['album']['title'], 
+                           cover_medium: track['album']['cover_medium'] 
+                         }, 
+                         preview: track['preview'] 
+                       }.to_json %>">
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer"
+                          data-action="click->player#playSong"
+                          data-song="<%= { 
+                            id: track['id'], 
+                            title: track['title'], 
+                            artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                            album: { 
+                              title: track['album']['title'], 
+                              cover_medium: track['album']['cover_medium'] 
+                            }, 
+                            preview: track['preview'] 
+                          }.to_json %>">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer"
+                     data-action="click->player#playSong"
+                     data-song="<%= { 
+                       id: track['id'], 
+                       title: track['title'], 
+                       artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                       album: { 
+                         title: track['album']['title'], 
+                         cover_medium: track['album']['cover_medium'] 
+                       }, 
+                       preview: track['preview'] 
+                     }.to_json %>">
+                  <h3 class="font-medium truncate"><%= track['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= track['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
         </div>
       </div>
 
@@ -265,34 +358,62 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold">Popular Albums</h2>
           <div class="flex space-x-2">
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-              </svg>
-            </button>
-            <button class="p-1 rounded-full hover:bg-gray-700">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-              </svg>
-            </button>
+            <!-- Removed navigation buttons as they're not functional -->
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <!-- Album Card (Example) -->
-          <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
-            <div class="relative">
-              <%= image_tag "album_image.jpeg", class: "w-full aspect-square object-cover" %>
-              <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full">
-                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </button>
-            </div>
-            <div class="p-3">
-              <h3 class="font-medium truncate">OUM TKAR MAS PREUK</h3>
-              <p class="text-gray-400 text-sm truncate">Ben Phanny</p>
-            </div>
-          </div>
+          <% if @popular_albums['data'] %>
+            <% @popular_albums['data'].each do |album| %>
+              <!-- Album Card -->
+              <div class="bg-gray-800 rounded-lg overflow-hidden transition-transform hover:scale-105">
+                <div class="relative">
+                  <img src="<%= album['cover_medium'] %>" class="w-full aspect-square object-cover cursor-pointer" alt="<%= album['title'] %>"
+                       data-action="click->player#playSong"
+                       data-song="<%= { 
+                         id: album['id'], 
+                         title: album['title'], 
+                         artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                         album: { 
+                           title: album['title'], 
+                           cover_medium: album['cover_medium'] 
+                         }, 
+                         preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                       }.to_json %>">
+                  <button class="absolute right-2 bottom-2 bg-gray-900 bg-opacity-70 p-2 rounded-full cursor-pointer" 
+                          data-action="click->player#playSong"
+                          data-song="<%= { 
+                            id: album['id'], 
+                            title: album['title'], 
+                            artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                            album: { 
+                              title: album['title'], 
+                              cover_medium: album['cover_medium'] 
+                            }, 
+                            preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                          }.to_json %>">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3 cursor-pointer" 
+                     data-action="click->player#playSong"
+                     data-song="<%= { 
+                       id: album['id'], 
+                       title: album['title'], 
+                       artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                       album: { 
+                         title: album['title'], 
+                         cover_medium: album['cover_medium'] 
+                       }, 
+                       preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                     }.to_json %>">
+                  <h3 class="font-medium truncate"><%= album['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= album['artist']['name'] %></p>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
         </div>
       </div>
 
@@ -315,36 +436,343 @@
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
-          <!-- Genre Cards -->
-          <div class="bg-blue-800 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Rock</h3>
+          <% if @genres['data'] %>
+            <% colors = ['bg-blue-800', 'bg-purple-700', 'bg-blue-600', 'bg-red-600', 'bg-teal-700', 'bg-green-800', 'bg-pink-700', 'bg-orange-600', 'bg-pink-600'] %>
+            <% @genres['data'].first(9).each_with_index do |genre, index| %>
+              <div class="<%= colors[index % colors.length] %> rounded-lg p-12 text-center transition-transform hover:scale-105">
+                <h3 class="font-bold text-xl"><%= genre['name'] %></h3>
+              </div>
+            <% end %>
+          <% else %>
+            <!-- Fallback Genre Cards -->
+            <div class="bg-blue-800 rounded-lg p-12 text-center transition-transform hover:scale-105">
+              <h3 class="font-bold text-xl">Rock</h3>
+            </div>
+            <div class="bg-purple-700 rounded-lg p-12 text-center transition-transform hover:scale-105">
+              <h3 class="font-bold text-xl">Electronic</h3>
+            </div>
+            <div class="bg-blue-600 rounded-lg p-12 text-center transition-transform hover:scale-105">
+              <h3 class="font-bold text-xl">Alternative</h3>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <div id="player-bar" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-50" data-controller="player">
+    <!-- Audio element is created dynamically in JavaScript -->
+    
+    <div class="container mx-auto flex items-center justify-between">
+      <!-- Song Info -->
+      <div class="flex items-center w-1/4">
+        <img src="" alt="Album Cover" class="album-cover w-12 h-12 object-cover rounded mr-3">
+        <div>
+          <h4 class="song-title text-sm font-medium">Select a song to play</h4>
+          <p class="artist-name text-xs text-gray-400">-</p>
+        </div>
+      </div>
+      
+      <!-- Player Controls -->
+      <div class="flex flex-col items-center w-2/4">
+        <div class="flex items-center space-x-4 mb-2">
+          <!-- Shuffle Button -->
+          <button class="text-gray-400 hover:text-white cursor-pointer" data-action="click->player#toggleShuffle">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm0.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+            </svg>
+          </button>
+          
+          <!-- Previous Button -->
+          <button class="text-gray-400 hover:text-white cursor-pointer" data-action="click->player#previous">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+            </svg>
+          </button>
+          
+          <!-- Play/Pause Button -->
+          <button class="text-black bg-white rounded-full p-2 hover:bg-gray-200 cursor-pointer" data-action="click->player#togglePlay">
+            <svg class="w-6 h-6" data-player-target="playIcon" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg class="w-6 h-6 hidden" data-player-target="pauseIcon" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          </button>
+          
+          <!-- Next Button -->
+          <button class="text-gray-400 hover:text-white cursor-pointer" data-action="click->player#next">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+            </svg>
+          </button>
+          
+          <!-- Repeat Button -->
+          <button class="text-gray-400 hover:text-white cursor-pointer" data-action="click->player#toggleRepeat">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="w-full flex items-center space-x-2">
+          <span class="current-time text-xs text-gray-400">0:00</span>
+          <div class="flex-1 h-1 bg-gray-700 rounded-full cursor-pointer" data-action="click->player#seek">
+            <div class="h-full bg-pink-500 rounded-full" data-player-target="progressBar" style="width: 0%"></div>
           </div>
-          <div class="bg-purple-700 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Electronic</h3>
-          </div>
-          <div class="bg-blue-600 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Alternative</h3>
-          </div>
-          <div class="bg-red-600 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Pop</h3>
-          </div>
-          <div class="bg-teal-700 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Indie</h3>
-          </div>
-          <div class="bg-green-800 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Metal</h3>
-          </div>
-          <div class="bg-pink-700 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Jazz</h3>
-          </div>
-          <div class="bg-orange-600 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Ambient</h3>
-          </div>
-          <div class="bg-pink-600 rounded-lg p-12 text-center transition-transform hover:scale-105">
-            <h3 class="font-bold text-xl">Folk</h3>
-          </div>
+          <span class="duration text-xs text-gray-400">0:00</span>
+        </div>
+      </div>
+      
+      <!-- Volume Control -->
+      <div class="flex items-center w-1/4 justify-end">
+        <svg class="w-5 h-5 text-gray-400 mr-2" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <div class="w-24 h-1 bg-gray-700 rounded-full cursor-pointer" data-action="click->player#adjustVolume">
+          <div class="h-full bg-gray-400 rounded-full volume-bar" data-player-target="volumeBar" style="width: 70%"></div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded');
+    const playerBar = document.getElementById('player-bar');
+    console.log('Player bar exists:', !!playerBar);
+    
+    // Check if Stimulus is loaded
+    console.log('Stimulus loaded:', typeof window.Stimulus !== 'undefined');
+    
+    // Set user interaction flag
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+    
+    // Find all song play buttons
+    const playButtons = document.querySelectorAll('[data-action="click->player#playSong"]');
+    console.log('Play buttons found:', playButtons.length);
+    
+    // Check for autoplay capability
+    const audio = document.createElement('audio');
+    audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    
+    audio.play()
+      .then(() => {
+        console.log('Autoplay is supported on this browser');
+        audio.pause();
+      })
+      .catch(error => {
+        console.log('Autoplay is not supported on this browser:', error.message);
+      });
+    
+    // Get the player controller instance
+    let playerController = null;
+    if (window.Stimulus) {
+      try {
+        playerController = window.Stimulus.getControllerForElementAndIdentifier(
+          document.getElementById('player-bar'),
+          'player'
+        );
+        console.log('Player controller found:', !!playerController);
+      } catch (e) {
+        console.error('Error getting player controller:', e);
+      }
+    }
+    
+    // Create a fallback audio player if needed
+    let fallbackAudio = null;
+    let currentSong = null;
+    
+    function updatePlayerUI(song) {
+      const songTitle = document.querySelector('.song-title');
+      const artistName = document.querySelector('.artist-name');
+      const albumCover = document.querySelector('.album-cover');
+      
+      if (songTitle) songTitle.textContent = song.title;
+      if (artistName) artistName.textContent = song.artist.name;
+      if (albumCover) albumCover.src = song.album?.cover_medium || '';
+      
+      // Update play/pause icons
+      const playIcon = document.querySelector('[data-player-target="playIcon"]');
+      const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
+      
+      if (playIcon) playIcon.classList.add('hidden');
+      if (pauseIcon) pauseIcon.classList.remove('hidden');
+    }
+    
+    function updateProgress() {
+      if (!fallbackAudio) return;
+      
+      const progressBar = document.querySelector('[data-player-target="progressBar"]');
+      const currentTimeElement = document.querySelector('.current-time');
+      
+      if (progressBar && !isNaN(fallbackAudio.duration) && fallbackAudio.duration > 0) {
+        const progress = (fallbackAudio.currentTime / fallbackAudio.duration) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        // Debug progress
+        console.log(`Progress: ${progress.toFixed(1)}%, Time: ${fallbackAudio.currentTime.toFixed(1)}/${fallbackAudio.duration.toFixed(1)}`);
+      }
+      
+      if (currentTimeElement) {
+        currentTimeElement.textContent = formatTime(fallbackAudio.currentTime);
+      }
+    }
+    
+    function updateDuration() {
+      if (!fallbackAudio) return;
+      
+      const durationElement = document.querySelector('.duration');
+      if (durationElement && !isNaN(fallbackAudio.duration) && fallbackAudio.duration > 0) {
+        durationElement.textContent = formatTime(fallbackAudio.duration);
+        console.log('Duration updated:', formatTime(fallbackAudio.duration));
+      } else {
+        console.log('Could not update duration:', fallbackAudio.duration);
+        // Try again in a moment
+        setTimeout(updateDuration, 500);
+      }
+    }
+    
+    function formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return "0:00";
+      
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    function playFallbackAudio(song) {
+      if (!song.preview) {
+        console.error('No preview URL found for song:', song);
+        return;
+      }
+      
+      console.log('Using fallback audio player for:', song.title);
+      
+      if (!fallbackAudio) {
+        fallbackAudio = new Audio();
+        
+        // Add event listeners
+        fallbackAudio.addEventListener('timeupdate', updateProgress);
+        fallbackAudio.addEventListener('loadedmetadata', updateDuration);
+        fallbackAudio.addEventListener('ended', function() {
+          const playIcon = document.querySelector('[data-player-target="playIcon"]');
+          const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
+          
+          if (playIcon) playIcon.classList.remove('hidden');
+          if (pauseIcon) pauseIcon.classList.add('hidden');
+        });
+      } else {
+        fallbackAudio.pause();
+      }
+      
+      fallbackAudio.src = song.preview;
+      fallbackAudio.volume = 0.7;
+      
+      // Update UI
+      updatePlayerUI(song);
+      currentSong = song;
+      
+      // Reset progress bar
+      const progressBar = document.querySelector('[data-player-target="progressBar"]');
+      if (progressBar) progressBar.style.width = '0%';
+      
+      // Play the audio
+      const playPromise = fallbackAudio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Fallback audio playing successfully');
+          })
+          .catch(error => {
+            console.error('Error playing fallback audio:', error);
+          });
+      }
+      
+      // Save to localStorage
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('currentSong', JSON.stringify(song));
+      }
+    }
+    
+    // Add click event listeners to all song play buttons
+    playButtons.forEach((button, index) => {
+      const songData = button.dataset.song;
+      if (songData) {
+        try {
+          const song = JSON.parse(songData);
+          if (!song.preview) {
+            console.warn(`Button ${index} has no preview URL:`, song);
+          }
+        } catch (e) {
+          console.error(`Error parsing song data for button ${index}:`, e);
+        }
+      }
+      
+      // Add a click handler that will work regardless of Stimulus
+      button.addEventListener('click', function(event) {
+        console.log(`Play button ${index} clicked`);
+        
+        try {
+          const song = JSON.parse(this.dataset.song);
+          console.log('Song data:', song);
+          
+          // Try to use the Stimulus controller if available
+          if (playerController && typeof playerController.playSong === 'function') {
+            console.log('Using Stimulus controller to play song');
+            // Create a synthetic event with currentTarget
+            const syntheticEvent = { currentTarget: this };
+            playerController.playSong(syntheticEvent);
+          } else {
+            // Fallback to our custom implementation
+            console.log('Using fallback player to play song');
+            playFallbackAudio(song);
+          }
+        } catch (e) {
+          console.error('Error playing song:', e);
+        }
+      });
+    });
+    
+    // Add handler for the play/pause button in the player bar
+    const togglePlayButton = document.querySelector('[data-action="click->player#togglePlay"]');
+    if (togglePlayButton) {
+      togglePlayButton.addEventListener('click', function() {
+        if (!fallbackAudio) return;
+        
+        if (fallbackAudio.paused) {
+          fallbackAudio.play();
+          const playIcon = document.querySelector('[data-player-target="playIcon"]');
+          const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
+          
+          if (playIcon) playIcon.classList.add('hidden');
+          if (pauseIcon) pauseIcon.classList.remove('hidden');
+        } else {
+          fallbackAudio.pause();
+          const playIcon = document.querySelector('[data-player-target="playIcon"]');
+          const pauseIcon = document.querySelector('[data-player-target="pauseIcon"]');
+          
+          if (playIcon) playIcon.classList.remove('hidden');
+          if (pauseIcon) pauseIcon.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Add handler for the seek bar
+    const seekBar = document.querySelector('[data-action="click->player#seek"]');
+    if (seekBar) {
+      seekBar.addEventListener('click', function(event) {
+        if (!fallbackAudio || isNaN(fallbackAudio.duration)) return;
+        
+        const rect = this.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const percentage = x / rect.width;
+        fallbackAudio.currentTime = percentage * fallbackAudio.duration;
+      });
+    }
+  });
+</script>

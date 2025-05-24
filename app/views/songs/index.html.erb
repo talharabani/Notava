@@ -1,0 +1,83 @@
+<div class="p-6">
+  <!-- Search Form -->
+  <div class="mb-8">
+    <%= form_with url: songs_path, method: :get, class: "flex gap-4" do |f| %>
+      <div class="flex-1">
+        <%= f.text_field :query, 
+            value: params[:query],
+            class: "w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500",
+            placeholder: "Search for songs...",
+            autocomplete: "off" %>
+      </div>
+      <%= f.submit "Search", 
+          class: "px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition duration-200" %>
+    <% end %>
+  </div>
+
+  <!-- Error Message -->
+  <% if @error.present? %>
+    <div class="mb-6 p-4 bg-red-900/50 border border-red-800 rounded-lg text-red-200">
+      <%= @error %>
+    </div>
+  <% end %>
+
+  <!-- Results Count -->
+  <% if params[:query].present? && @total > 0 %>
+    <div class="mb-4 text-gray-400">
+      Found <%= @total %> results for "<%= params[:query] %>"
+    </div>
+  <% end %>
+
+  <!-- Results Grid -->
+  <% if @songs.any? %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <% @songs.each do |song| %>
+        <div class="glass-effect rounded-lg overflow-hidden hover-glow">
+          <!-- Album Cover -->
+          <div class="aspect-square relative">
+            <% if song['album'] && song['album']['cover_medium'] %>
+              <%= image_tag song['album']['cover_medium'], 
+                  alt: "#{song['title']} album cover",
+                  class: "w-full h-full object-cover" %>
+            <% else %>
+              <div class="w-full h-full bg-gray-800 flex items-center justify-center">
+                <svg class="w-12 h-12 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Song Info -->
+          <div class="p-4">
+            <h3 class="text-lg font-semibold truncate" title="<%= song['title'] %>">
+              <%= song['title'] %>
+            </h3>
+            <p class="text-gray-400 text-sm truncate" title="<%= song['artist']['name'] %>">
+              <%= song['artist']['name'] %>
+            </p>
+
+            <!-- Audio Preview -->
+            <% if song['preview'].present? %>
+              <div class="mt-3">
+                <audio controls class="w-full h-8">
+                  <source src="<%= song['preview'] %>" type="audio/mpeg">
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% elsif params[:query].present? %>
+    <div class="text-center py-12">
+      <div class="text-gray-400 mb-2">
+        No songs found for "<%= params[:query] %>"
+      </div>
+      <p class="text-gray-500 text-sm">
+        Try different keywords or check your spelling
+      </p>
+    </div>
+  <% end %>
+</div> 

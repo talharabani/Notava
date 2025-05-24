@@ -4,22 +4,33 @@ export default class extends Controller {
   static targets = ["menu"]
 
   connect() {
-    // Close dropdown when clicking outside
-    document.addEventListener("click", this.handleClickOutside.bind(this))
+    console.log("Dropdown controller connected");
+    document.addEventListener('click', this.outsideClick.bind(this));
   }
 
   disconnect() {
-    document.removeEventListener("click", this.handleClickOutside.bind(this))
+    document.removeEventListener('click', this.outsideClick.bind(this));
   }
 
-  toggle(event) {
-    event.stopPropagation()
-    this.menuTarget.classList.toggle("hidden")
-  }
-
-  handleClickOutside(event) {
-    if (!this.element.contains(event.target)) {
-      this.menuTarget.classList.add("hidden")
+  outsideClick(event) {
+    if (!this.element.contains(event.target) && !this.menuTarget.classList.contains('hidden')) {
+      this.hide();
     }
+  }
+
+  toggle() {
+    if (this.menuTarget.classList.contains('hidden')) {
+      this.show();
+    } else {
+      this.hide();
+    }
+  }
+
+  show() {
+    this.menuTarget.classList.remove('hidden');
+  }
+
+  hide() {
+    this.menuTarget.classList.add('hidden');
   }
 } 

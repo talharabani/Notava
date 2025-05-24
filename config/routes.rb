@@ -15,4 +15,21 @@ Rails.application.routes.draw do
   
   # Profile routes
   get 'profile', to: 'profiles#show', as: :profile
+  
+  # Search route
+  get 'search', to: 'home#search', as: :search
+  
+  # Music API routes
+  resources :music, only: [] do
+    collection do
+      get 'search'
+      get 'chart'
+      get 'new_releases'
+      get 'genres'
+    end
+    member do
+      get 'artist'
+      get 'album'
+    end
+  end
 end

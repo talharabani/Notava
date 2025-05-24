@@ -20,6 +20,24 @@
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+    
+    <script>
+      // Handle user interaction for autoplay
+      document.addEventListener('DOMContentLoaded', function() {
+        const interactionEvents = ['mousedown', 'keydown', 'touchstart'];
+        
+        function handleUserInteraction() {
+          document.documentElement.setAttribute('data-user-interacted', 'true');
+          interactionEvents.forEach(event => {
+            document.removeEventListener(event, handleUserInteraction);
+          });
+        }
+        
+        interactionEvents.forEach(event => {
+          document.addEventListener(event, handleUserInteraction);
+        });
+      });
+    </script>
   </head>
 
   <body class="min-h-full bg-gradient-to-br from-[#0d1b2a] to-[#415a77] text-[#e0e1dd]">
