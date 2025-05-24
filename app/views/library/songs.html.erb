@@ -29,16 +29,16 @@
           <% if user_playlists.present? %>
             <% user_playlists.each do |playlist| %>
               <!-- Playlist Card -->
-              <%= link_to playlist_path(playlist), class: "bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" do %>
+              <%= link_to playlist_path(playlist), class: "bg-gradient-to-br from-indigo-900/60 to-cyan-900/30 backdrop-blur-sm rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-900/20 border border-cyan-800/30 hover:scale-105" do %>
                 <div class="relative">
                   <img src="<%= playlist.cover_image %>" class="w-full aspect-square object-cover" alt="<%= playlist.name %>">
-                  <div class="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-950/80 flex items-end">
+                  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-950/50 to-indigo-950/90 flex items-end">
                     <div class="p-4 w-full">
                       <h3 class="font-bold text-lg"><%= playlist.name %></h3>
-                      <p class="text-gray-300 text-sm"><%= playlist.playlist_tracks.count %> tracks</p>
+                      <p class="text-cyan-300 text-sm"><%= playlist.playlist_tracks.count %> tracks</p>
                     </div>
                   </div>
-                  <button class="absolute right-3 bottom-3 bg-cyan-500 rounded-full p-3 shadow-lg hover:bg-cyan-400 transition-colors">
+                  <button class="absolute right-3 bottom-3 bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full p-3 shadow-lg hover:scale-105 transition-all">
                     <svg class="w-6 h-6 text-indigo-950" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M8 5v14l11-7z"/>
                     </svg>
@@ -49,10 +49,12 @@
           <% end %>
           
           <!-- Create New Playlist Card -->
-          <%= link_to new_playlist_path, class: "bg-indigo-900/20 backdrop-blur-sm border border-cyan-900/10 border-dashed rounded-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer flex flex-col items-center justify-center aspect-square" do %>
-            <svg class="w-12 h-12 text-cyan-500/70 mb-2" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-            </svg>
+          <%= link_to new_playlist_path, class: "bg-gradient-to-br from-indigo-900/40 to-cyan-900/20 backdrop-blur-sm border border-cyan-800/20 border-dashed rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-900/20 cursor-pointer flex flex-col items-center justify-center aspect-square" do %>
+            <div class="bg-gradient-to-r from-cyan-500/20 to-cyan-400/20 rounded-full p-4 mb-3">
+              <svg class="w-10 h-10 text-cyan-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+            </div>
             <p class="font-medium text-cyan-300">Create Playlist</p>
           <% end %>
         </div>
@@ -78,9 +80,9 @@
         </div>
         
         <!-- Tracks Table -->
-        <div class="bg-indigo-900/30 backdrop-blur-sm rounded-lg border border-cyan-900/20 overflow-hidden shadow-md">
+        <div class="bg-gradient-to-br from-indigo-900/40 to-cyan-900/20 backdrop-blur-sm rounded-xl border border-cyan-800/30 overflow-hidden shadow-lg">
           <table class="min-w-full divide-y divide-cyan-900/30">
-            <thead class="bg-indigo-950/50">
+            <thead class="bg-gradient-to-r from-indigo-950/60 to-indigo-900/60">
               <tr>
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-10">#</th>
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Title</th>
@@ -90,10 +92,11 @@
                 <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-16"></th>
               </tr>
             </thead>
-            <tbody class="bg-indigo-900/10 divide-y divide-cyan-900/30" data-controller="song-element">
+            <tbody class="bg-indigo-900/10 divide-y divide-cyan-900/20">
               <% if @library_tracks['data'] %>
                 <% @library_tracks['data'].each_with_index do |track, index| %>
-                  <tr class="hover:bg-indigo-800/30 cursor-pointer transition"
+                  <tr class="hover:bg-indigo-800/40 cursor-pointer transition group"
+                      data-controller="song-element"
                       data-action="click->song-element#playSong"
                       data-song-element-song-value="<%= { 
                         id: track['id'], 
@@ -105,28 +108,35 @@
                         }, 
                         preview: track['preview'] 
                       }.to_json %>">
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400"><%= index + 1 %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-cyan-400/70"><%= index + 1 %></td>
                     <td class="px-4 py-3 whitespace-nowrap">
                       <div class="flex items-center">
-                        <img src="<%= track['album']['cover_medium'] %>" class="w-10 h-10 rounded object-cover mr-3" alt="<%= track['title'] %>">
-                        <span class="font-medium"><%= track['title'] %></span>
+                        <div class="relative">
+                          <img src="<%= track['album']['cover_medium'] %>" class="w-10 h-10 rounded-md object-cover mr-3" alt="<%= track['title'] %>">
+                          <div class="absolute inset-0 bg-indigo-950/50 rounded-md opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                        <span class="font-medium text-white"><%= track['title'] %></span>
                       </div>
                     </td>
-                    <td class="px-4 py-3 whitespace-nowrap text-gray-300"><%= track['artist']['name'] %></td>
-                    <td class="px-4 py-3 whitespace-nowrap text-gray-300 truncate max-w-xs"><%= track['album']['title'] %></td>
-                    <td class="px-4 py-3 whitespace-nowrap text-gray-400">
+                    <td class="px-4 py-3 whitespace-nowrap text-cyan-300"><%= track['artist']['name'] %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-cyan-300 truncate max-w-xs"><%= track['album']['title'] %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-cyan-400/70">
                       <%= track['duration'] ? "#{track['duration'] / 60}:#{(track['duration'] % 60).to_s.rjust(2, '0')}" : "0:30" %>
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-right">
                       <div class="flex items-center justify-end space-x-2">
-                        <button class="text-gray-400 hover:text-cyan-400" 
+                        <button class="text-cyan-400/80 hover:text-cyan-300 transition-colors" 
                                 data-action="click->playlist#showAddToPlaylistModal" 
                                 data-track-id="<%= track['id'] %>">
                           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z"/>
                           </svg>
                         </button>
-                        <button class="text-gray-400 hover:text-cyan-400">
+                        <button class="text-cyan-400/80 hover:text-cyan-300 transition-colors">
                           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                           </svg>

@@ -1,0 +1,258 @@
+/**
+ * Song Elements CSS
+ * 
+ * This stylesheet provides consistent styling for song elements
+ * across the entire application.
+ */
+
+/* Interactive song elements */
+.song-interactive {
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.song-interactive:hover {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+/* Active song (currently playing) */
+.song-active {
+  background-color: rgba(8, 145, 178, 0.15) !important;
+  border-left: 2px solid rgb(34, 211, 238) !important;
+  position: relative;
+}
+
+.song-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.7), rgba(34, 211, 238, 0));
+  animation: playing-progress 30s linear infinite;
+  z-index: 1;
+}
+
+@keyframes playing-progress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+/* Now playing indicator animation */
+@keyframes equalizer {
+  0% { height: 5px; }
+  50% { height: 12px; }
+  100% { height: 5px; }
+}
+
+.now-playing-indicator {
+  display: inline-flex;
+  align-items: flex-end;
+  height: 14px;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.now-playing-indicator span {
+  width: 2px;
+  background-color: #22d3ee;
+  margin: 0 1px;
+  border-radius: 1px;
+}
+
+.now-playing-indicator span:nth-child(1) {
+  height: 8px;
+  animation: equalizer 0.8s infinite;
+}
+
+.now-playing-indicator span:nth-child(2) {
+  height: 10px;
+  animation: equalizer 0.8s infinite;
+  animation-delay: 0.2s;
+}
+
+.now-playing-indicator span:nth-child(3) {
+  height: 6px;
+  animation: equalizer 0.8s infinite;
+  animation-delay: 0.4s;
+}
+
+/* Play indicator that appears on hover */
+.play-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(30, 58, 138, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.song-interactive:hover .play-indicator {
+  opacity: 1;
+}
+
+/* Table row styling for song elements */
+tr.song-interactive:hover td {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+tr.song-active td {
+  background-color: rgba(8, 145, 178, 0.15);
+}
+
+tr.song-active td:first-child {
+  border-left: 2px solid rgb(34, 211, 238);
+}
+
+/* Card styling for song elements */
+.card.song-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(34, 211, 238, 0.1), 0 4px 6px -2px rgba(34, 211, 238, 0.05);
+}
+
+.card.song-active {
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.5);
+}
+
+/* Song add to queue button styling */
+.add-to-queue-button {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.song-interactive:hover .add-to-queue-button {
+  opacity: 1;
+}
+
+/* Error state for song elements */
+.song-error {
+  animation: song-error-pulse 0.5s ease;
+}
+
+@keyframes song-error-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); background-color: rgba(244, 63, 94, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.4); background-color: rgba(244, 63, 94, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); background-color: rgba(244, 63, 94, 0); }
+}
+
+/* Warning state for song elements with potential issues */
+.song-warning {
+  animation: song-warning-pulse 0.5s ease;
+}
+
+@keyframes song-warning-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); background-color: rgba(251, 191, 36, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4); background-color: rgba(251, 191, 36, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); background-color: rgba(251, 191, 36, 0); }
+}
+
+/* Animation when starting playback */
+.song-playing-animation {
+  animation: song-play-pulse 0.5s ease;
+}
+
+@keyframes song-play-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); background-color: rgba(34, 211, 238, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.4); background-color: rgba(34, 211, 238, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); background-color: rgba(34, 211, 238, 0); }
+}
+
+/* Add to playlist button styling */
+.add-to-playlist-button {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.song-interactive:hover .add-to-playlist-button {
+  opacity: 1;
+}
+
+/* Audio needs interaction indicator */
+[data-needs-interaction="true"] .song-active::before {
+  content: "Tap to play";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(30, 58, 138, 0.8);
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  z-index: 10;
+  animation: pulse-interaction 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-interaction {
+  0% { background-color: rgba(30, 58, 138, 0.7); }
+  50% { background-color: rgba(34, 211, 238, 0.7); }
+  100% { background-color: rgba(30, 58, 138, 0.7); }
+}
+
+/* Global notification styling */
+#player-notification {
+  z-index: 99999; /* Ensure it's above everything */
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#player-notification.persistent {
+  animation: notification-pulse 2s infinite ease-in-out;
+}
+
+@keyframes notification-pulse {
+  0% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 0 4px 16px rgba(34, 211, 238, 0.5); }
+  100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+}
+
+/* Play button that pulses when user interaction needed */
+[data-needs-interaction="true"] .play-button,
+[data-needs-interaction="true"] .player-controls button {
+  animation: need-interaction-pulse 1.5s infinite ease-in-out;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.5);
+  z-index: 10;
+  position: relative;
+}
+
+@keyframes need-interaction-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(34, 211, 238, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+
+/* User feedback for when they need to interact */
+[data-needs-interaction="true"]::before {
+  content: "Tap to enable audio";
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(30, 58, 138, 0.9);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: float-hint 2s infinite ease-in-out;
+}
+
+@keyframes float-hint {
+  0% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-10px); }
+  100% { transform: translateX(-50%) translateY(0); }
+} 

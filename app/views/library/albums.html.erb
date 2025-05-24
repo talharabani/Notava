@@ -47,10 +47,16 @@
         <% if @library_albums['data'] %>
           <% @library_albums['data'].each do |album| %>
             <!-- Album Card -->
-            <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" data-controller="song-element">
-              <div class="relative">
+            <div class="bg-gradient-to-br from-indigo-900/60 to-cyan-900/30 backdrop-blur-sm rounded-xl overflow-hidden hover:shadow-lg hover:shadow-cyan-900/20 transition-all duration-300 border border-cyan-800/30" data-controller="song-element">
+              <div class="relative group">
                 <img src="<%= album['cover_medium'] %>" class="w-full aspect-square object-cover" alt="<%= album['title'] %>">
-                <button class="absolute right-2 bottom-2 bg-cyan-600 bg-opacity-90 p-2 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                <div class="absolute inset-0 bg-gradient-to-t from-indigo-950/90 via-indigo-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="absolute top-2 right-2 bg-cyan-400/90 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 shadow-lg">
+                  <svg class="w-4 h-4 text-indigo-950" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                  </svg>
+                </div>
+                <button class="absolute right-2 bottom-2 bg-gradient-to-r from-cyan-500 to-cyan-400 p-2.5 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 shadow-lg transform hover:scale-105"
                         data-action="click->song-element#playSong"
                         data-song-element-song-value="<%= { 
                           id: album['id'], 
@@ -62,17 +68,26 @@
                           }, 
                           preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
                         }.to_json %>">
-                  <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <svg class="w-5 h-5 text-indigo-950" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 </button>
               </div>
-              <div class="p-3">
+              <div class="p-4">
                 <h3 class="font-medium truncate"><%= album['title'] %></h3>
-                <p class="text-gray-400 text-sm truncate"><%= album['artist']['name'] %></p>
-                <p class="text-xs text-cyan-400 mt-1">
-                  <%= album['release_date'] ? album['release_date'].split('-').first : "Album" %>
-                </p>
+                <p class="text-cyan-300 text-sm truncate"><%= album['artist']['name'] %></p>
+                <div class="mt-2 flex items-center justify-between">
+                  <span class="text-xs bg-indigo-800/50 text-cyan-300 px-2 py-0.5 rounded-full">
+                    <%= album['release_date'] ? album['release_date'].split('-').first : "Album" %>
+                  </span>
+                  <button class="text-cyan-400 hover:text-cyan-300 transition-colors" 
+                          data-action="click->playlist#showAddToPlaylistModal"
+                          data-track-id="<%= album['id'] %>">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           <% end %>

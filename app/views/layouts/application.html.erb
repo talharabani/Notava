@@ -90,6 +90,9 @@
       <%= yield %>
     </main>
     
+    <!-- Global Player Bar -->
+    <%= render 'shared/player' unless @hide_player %>
+    
     <!-- Add to Playlist Modal -->
     <div data-controller="playlist">
       <div class="hidden fixed inset-0 z-[999] flex items-center justify-center p-4" data-playlist-target="addToPlaylistModal">

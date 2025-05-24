@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { playWithFallbacks, hasAutoplayRestrictions, unlockAudioContext } from "controllers/audio_helper"
 
 // Create a singleton audio player that will be shared across all instances
 let globalAudio = null;
@@ -109,13 +110,51 @@ export default class extends Controller {
             this.updatePlayerUI(song);
           } catch (e) {
             console.error("Error parsing saved song:", e);
+            // Don't rethrow the error, simply log it and continue initialization
+            // This prevents controller registration failure
           }
         }
       }
     }
     
+    // Set up document-level click handler for autoplay restrictions
+    this.setupGlobalInteractionHandler();
+    
     // Register this controller globally
     window.playerController = this;
+  }
+
+  // Setup a global click handler to help with autoplay restrictions
+  setupGlobalInteractionHandler() {
+    // Only add if not already added
+    if (!window.audioInteractionHandlerAdded) {
+      window.audioInteractionHandlerAdded = true;
+      
+      const handleInteraction = () => {
+        console.log("Document interaction detected");
+        
+        // Use our helper function to unlock audio
+        unlockAudioContext();
+        
+        // If we have pending playback, try to resume it
+        if (this.pendingPlayback) {
+          this.resumePendingPlayback();
+        }
+      };
+      
+      // Add both click and touch events for mobile support
+      document.addEventListener('click', handleInteraction);
+      document.addEventListener('touchstart', handleInteraction);
+      
+      console.log("Global interaction handlers set up");
+      
+      // Show a notification on initial load if the browser likely has autoplay restrictions
+      if (hasAutoplayRestrictions()) {
+        setTimeout(() => {
+          this.showNotification("Tap anywhere to enable audio playback", 5000);
+        }, 1000);
+      }
+    }
   }
 
   disconnect() {
@@ -126,67 +165,197 @@ export default class extends Controller {
   playSong(event) {
     console.log("playSong method called");
     try {
-      const songData = event.currentTarget.dataset.song;
+      let songData = event.currentTarget.dataset.song;
       const addToQueue = event.currentTarget.dataset.addToQueue === 'true';
-      console.log("Song data:", songData, "Add to queue:", addToQueue);
+      console.log("Song data:", typeof songData, "Add to queue:", addToQueue);
       
-      const song = JSON.parse(songData);
+      if (!songData) {
+        console.error("No song data provided");
+        this.showNotification("Error: No song data available");
+        return;
+      }
+      
+      // Parse the song data if it's a string
+      let song;
+      if (typeof songData === 'string') {
+        try {
+          song = JSON.parse(songData);
+        } catch (parseError) {
+          console.error("Error parsing song data:", parseError);
+          this.showNotification("Error: Invalid song data format");
+          return;
+        }
+      } else if (typeof songData === 'object') {
+        // Already an object
+        song = songData;
+      } else {
+        console.error("Unexpected song data type:", typeof songData);
+        this.showNotification("Error: Invalid song data type");
+        return;
+      }
+      
       console.log("Parsed song:", song);
       
-      if (addToQueue) {
-        // Add to queue instead of replacing
-        this.addToQueue(song);
-      } else {
-        // Replace current queue
-        this.currentSongValue = song;
-        globalCurrentSong = song;
-        this.queue = [song];
-        this.currentIndex = 0;
+      // Check for preview URL early
+      if (!song.preview || song.preview.trim() === '') {
+        console.error("No preview URL found in song data");
+        this.showNotification(`No preview available for: ${song.title}`);
         
-        // Save current song to localStorage
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('currentSong', JSON.stringify(song));
-        }
-        
-        // Update player UI
-        this.updatePlayerUI(song);
-        
-        // Play the song
-        if (song.preview && song.preview.trim() !== '') {
-          console.log("Playing preview URL:", song.preview);
-          this.playAudio(song.preview);
-        } else {
-          console.error("No preview URL found in song data");
-          
-          // Try to find a preview URL from the album or artist if available
-          let previewUrl = '';
-          
-          if (song.album && song.album.tracks && song.album.tracks.data && song.album.tracks.data.length > 0) {
-            // Try to get preview from album tracks
-            const trackWithPreview = song.album.tracks.data.find(track => track.preview && track.preview.trim() !== '');
-            if (trackWithPreview) {
-              previewUrl = trackWithPreview.preview;
-              console.log("Found preview URL from album tracks:", previewUrl);
+        // Try to find an alternative preview immediately
+        this.findAlternativePreview(song)
+          .then(alternativeUrl => {
+            if (alternativeUrl) {
+              console.log("Found alternative preview:", alternativeUrl);
+              song.preview = alternativeUrl;
+              this.processSongAfterPreviewCheck(song, addToQueue);
+            } else {
+              this.handleAudioError();
             }
-          }
-          
-          if (previewUrl) {
-            this.playAudio(previewUrl);
-          } else {
+          })
+          .catch(error => {
+            console.error("Error finding alternative preview:", error);
             this.handleAudioError();
-            
-            // Show a more specific error message
-            const songTitle = this.element.querySelector('.song-title');
-            const artistName = this.element.querySelector('.artist-name');
-            
-            if (songTitle) songTitle.textContent = 'No preview available';
-            if (artistName) artistName.textContent = 'Try another song';
-          }
-        }
+          });
+        return;
       }
+      
+      this.processSongAfterPreviewCheck(song, addToQueue);
     } catch (error) {
       console.error("Error in playSong method:", error);
       this.handleAudioError();
+      this.showNotification("Error playing song");
+    }
+  }
+
+  // New helper method to process song after preview URL check
+  processSongAfterPreviewCheck(song, addToQueue) {
+    if (addToQueue) {
+      // Add to queue instead of replacing
+      this.addToQueue(song);
+    } else {
+      // Replace current queue
+      this.currentSongValue = song;
+      globalCurrentSong = song;
+      this.queue = [song];
+      this.currentIndex = 0;
+      
+      // Save current song to localStorage
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('currentSong', JSON.stringify(song));
+      }
+      
+      // Update player UI
+      this.updatePlayerUI(song);
+      
+      // Play the song
+      console.log("Playing preview URL:", song.preview);
+      this.playAudio(song.preview);
+    }
+  }
+
+  // Find alternative preview URL for a song when the original is missing
+  async findAlternativePreview(song) {
+    // Try to search for the song by title and artist
+    if (!song.title) {
+      console.error("Cannot find alternative preview: song has no title");
+      return null;
+    }
+    
+    try {
+      console.log("Searching for alternative preview for:", song.title);
+      
+      // Construct a search query - use both title and artist if available
+      let searchQuery = song.title;
+      if (song.artist && song.artist.name) {
+        searchQuery += ` ${song.artist.name}`;
+      }
+      
+      // First try: search via API
+      try {
+        const response = await fetch(`/music/search?query=${encodeURIComponent(searchQuery)}&format=json`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Look for a matching song with a preview URL
+          if (data && data.data && data.data.length > 0) {
+            // Find the best match
+            const bestMatch = data.data.find(track => 
+              track.preview && 
+              track.preview.trim() !== '' && 
+              (track.title.toLowerCase().includes(song.title.toLowerCase()) || 
+               song.title.toLowerCase().includes(track.title.toLowerCase()))
+            );
+            
+            if (bestMatch) {
+              console.log("Found alternative preview from API search:", bestMatch.preview);
+              return bestMatch.preview;
+            }
+          }
+        }
+      } catch (apiError) {
+        console.error("API search failed:", apiError);
+      }
+      
+      // Second try: search for embedded audio elements in the page
+      const audioElements = document.querySelectorAll('audio');
+      for (const audio of audioElements) {
+        if (audio.src && audio.src.trim() !== '') {
+          console.log("Found audio element with src:", audio.src);
+          return audio.src;
+        }
+      }
+      
+      // Third try: check for source elements
+      const sourceElements = document.querySelectorAll('source');
+      for (const source of sourceElements) {
+        if (source.src && source.src.trim() !== '') {
+          console.log("Found source element with src:", source.src);
+          return source.src;
+        }
+      }
+      
+      // Fourth try: check if there are songs already in the queue with URLs
+      if (this.queue && this.queue.length > 0) {
+        const songWithPreview = this.queue.find(queuedSong => 
+          queuedSong.preview && queuedSong.preview.trim() !== ''
+        );
+        
+        if (songWithPreview) {
+          console.log("Found preview from queue:", songWithPreview.preview);
+          return songWithPreview.preview;
+        }
+      }
+      
+      // Fifth try: look for any song elements on the page with preview data
+      const songElements = document.querySelectorAll('[data-song]');
+      for (const element of songElements) {
+        try {
+          const songData = JSON.parse(element.dataset.song);
+          if (songData.preview && songData.preview.trim() !== '') {
+            console.log("Found preview from page song element:", songData.preview);
+            return songData.preview;
+          }
+        } catch (e) {
+          console.error("Error parsing song data from element:", e);
+        }
+      }
+      
+      // Sixth try: look for elements with data-preview, data-audio, etc.
+      const elementsWithData = document.querySelectorAll('[data-preview], [data-audio], [data-src], [data-url], [data-track-url]');
+      for (const el of elementsWithData) {
+        if (el.dataset.preview) return el.dataset.preview;
+        if (el.dataset.audio) return el.dataset.audio;
+        if (el.dataset.src) return el.dataset.src;
+        if (el.dataset.url) return el.dataset.url;
+        if (el.dataset.trackUrl) return el.dataset.trackUrl;
+      }
+      
+      console.log("No alternative preview found");
+      return null;
+    } catch (error) {
+      console.error("Error finding alternative preview:", error);
+      return null;
     }
   }
 
@@ -204,12 +373,81 @@ export default class extends Controller {
     if (songTitle) songTitle.textContent = song.title;
     if (artistName) artistName.textContent = song.artist.name;
     if (albumCover) albumCover.src = song.album?.cover_medium || '';
+    
+    // Dispatch a custom event to notify that the song has changed
+    const songChangedEvent = new CustomEvent('songChanged', { 
+      detail: { song: song },
+      bubbles: true
+    });
+    document.dispatchEvent(songChangedEvent);
+    
+    // Add active class to any matching song elements in the DOM
+    this.updateActiveElements(song);
+  }
+
+  // Mark elements with matching song as active and remove active state from others
+  updateActiveElements(song) {
+    if (!song || !song.id) return;
+    
+    // Remove active class from all song elements
+    document.querySelectorAll('.song-active').forEach(element => {
+      element.classList.remove('song-active');
+    });
+    
+    // Add active class to matching song elements
+    try {
+      document.querySelectorAll('[data-song]').forEach(element => {
+        try {
+          const songData = JSON.parse(element.dataset.song);
+          if (songData.id === song.id) {
+            element.classList.add('song-active');
+          }
+        } catch (e) {
+          console.error("Error parsing song data:", e);
+        }
+      });
+    } catch (e) {
+      console.error("Error updating active elements:", e);
+    }
   }
 
   playAudio(src) {
-    console.log("playAudio method called with src:", src);
+    console.log("playAudio method called with initial src:", src);
     if (!src) {
       console.error("No source provided to playAudio");
+      this.handleAudioError();
+      return;
+    }
+
+    let audioUrl = src; // Use a new variable for the final audio URL
+
+    // Check if the source string is likely a JSON object containing the actual preview URL
+    if (typeof audioUrl === 'string' && audioUrl.trim().startsWith('{') && audioUrl.trim().endsWith('}')) {
+      console.log("Source appears to be a JSON string, attempting to parse for preview URL.");
+      try {
+        const parsedSongData = JSON.parse(audioUrl);
+        if (parsedSongData && parsedSongData.preview) {
+          audioUrl = parsedSongData.preview;
+          console.log("Extracted actual preview URL from JSON:", audioUrl);
+        } else {
+          console.warn("Parsed JSON, but no preview URL found inside. Original source was:", audioUrl);
+          // Potentially handle error or try to use audioUrl as is if parsing failed to find preview
+        }
+      } catch (e) {
+        console.error("Failed to parse source as JSON, though it looked like one. Original source was:", audioUrl, "Error:", e);
+        // audioUrl remains the original src; proceed to URL validation, which might fail
+      }
+    }
+
+    // Now, validate/normalize the audioUrl (which should be an actual URL string here)
+    try {
+      // If audioUrl is already an absolute URL, the base window.location.href is ignored.
+      // If it's relative, it's resolved against the base.
+      const url = new URL(audioUrl, window.location.href);
+      audioUrl = url.href; // Use the normalized URL
+      console.log("Normalized audio URL for playback:", audioUrl);
+    } catch (urlError) {
+      console.error("Invalid audio URL format after potential JSON parsing. Attempted URL:", audioUrl, "Error:", urlError);
       this.handleAudioError();
       return;
     }
@@ -218,7 +456,6 @@ export default class extends Controller {
     if (globalAudio) {
       console.log("Stopping current audio playback");
       globalAudio.pause();
-      globalAudio.currentTime = 0;
     }
 
     if (!this.audio) {
@@ -240,98 +477,34 @@ export default class extends Controller {
       this.progressBarTarget.style.width = '0%';
     }
     
-    // Set new source
-    this.audio.src = src;
-    console.log("Audio source set, attempting to play");
+    // Reset the audio element
+    this.audio.currentTime = 0;
     
-    // Check if we can autoplay (browsers often block autoplay)
-    const userInteracted = document.documentElement.hasAttribute('data-user-interacted');
-    console.log("User has interacted with the page:", userInteracted);
+    // Set volume to current value
+    this.audio.volume = this.volumeValue;
     
-    // Reset pending playback flag
-    this.pendingPlayback = false;
-    
-    try {
-      // Try to play the audio
-      const playPromise = this.audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log("Audio playing successfully");
-            this.isPlayingValue = true;
-            globalIsPlaying = true;
-            this.updatePlayPauseIcon();
-          })
-          .catch(error => {
-            console.error('Error playing audio:', error);
-            
-            if (error.name === 'NotAllowedError') {
-              console.log("Autoplay blocked by browser, waiting for user interaction");
-              
-              // Set pending playback flag
-              this.pendingPlayback = true;
-              
-              // Show a notification to the user
-              this.showNotification("Click anywhere to enable audio playback");
-              
-              // Setup a one-time click handler to resume playback
-              const resumePlayback = () => {
-                console.log("User interaction detected, trying to play audio again");
-                
-                this.audio.play()
-                  .then(() => {
-                    console.log("Audio playing after user interaction");
-                    this.isPlayingValue = true;
-                    globalIsPlaying = true;
-                    this.updatePlayPauseIcon();
-                    
-                    // Remove the event listener
-                    document.removeEventListener('click', resumePlayback);
-                  })
-                  .catch(err => {
-                    console.error("Still can't play audio after user interaction:", err);
-                  });
-              };
-              
-              // Add a click event listener to the document
-              document.addEventListener('click', resumePlayback, { once: true });
-            } else {
-              this.handleAudioError();
-              
-              // Try a fallback approach
-              console.log("Trying fallback approach with a new audio element");
-              const fallbackAudio = new Audio();
-              fallbackAudio.src = src;
-              fallbackAudio.volume = this.audio.volume;
-              
-              fallbackAudio.play()
-                .then(() => {
-                  console.log("Fallback audio playing successfully");
-                  // Replace the main audio element
-                  this.audio = fallbackAudio;
-                  globalAudio = fallbackAudio;
-                  this.isPlayingValue = true;
-                  globalIsPlaying = true;
-                  this.updatePlayPauseIcon();
-                  
-                  // Re-attach event listeners
-                  this.audio.addEventListener('timeupdate', this.updateProgress.bind(this));
-                  this.audio.addEventListener('ended', this.handleSongEnd.bind(this));
-                  this.audio.addEventListener('loadedmetadata', this.updateDuration.bind(this));
-                  this.audio.addEventListener('error', this.handleAudioError.bind(this));
-                  this.audio.addEventListener('abort', this.handleAudioAbort.bind(this));
-                })
-                .catch(fallbackError => {
-                  console.error("Fallback audio also failed:", fallbackError);
-                });
-            }
-          });
+    // Log the source URL before attempting to play
+    console.log("Attempting to play final audio source:", audioUrl);
+
+    // Use our audio helper for improved playback
+    playWithFallbacks(
+      this.audio, 
+      audioUrl, // Use the processed audioUrl
+      // Success callback
+      () => {
+        console.log("Playback successful via helper");
+        this.isPlayingValue = true;
+        globalIsPlaying = true;
+        this.updatePlayPauseIcon();
+        document.documentElement.removeAttribute('data-needs-interaction');
+      },
+      // Error callback
+      (error) => {
+        console.error("All playback attempts failed:", error);
+        this.handleAudioError();
+        this.showNotification("Could not play audio. Try tapping the player.", 5000);
       }
-    } catch (error) {
-      console.error("Error attempting to play audio:", error);
-      this.handleAudioError();
-    }
+    );
   }
 
   handleAudioError() {
@@ -566,37 +739,147 @@ export default class extends Controller {
   }
 
   handleSongEnd() {
-    console.log("handleSongEnd method called");
-    if (!this.audio) return;
-    
+    console.log("Song ended");
+
+    // If we're on repeat mode, play the same song again
     if (this.isRepeatingValue) {
-      // If repeat is enabled, just restart the current song
+      console.log("Repeating current song");
       this.audio.currentTime = 0;
-      this.audio.play().catch(error => {
-        console.error("Error replaying song:", error);
-      });
-    } else if (this.currentIndex < this.queue.length - 1) {
-      // If there's a next song in the queue, play it
-      this.next();
-    } else {
-      // If we're at the end of the queue
-      if (this.queue.length > 0) {
-        // If shuffle is enabled, reshuffle the queue and start from the beginning
+      this.playAudio(this.audio.src);
+      return;
+    }
+
+    // Otherwise, play the next song in the queue
+    if (this.queue.length > 1) {
+      if (this.currentIndex < this.queue.length - 1) {
+        console.log("Playing next song in queue");
+        this.currentIndex++;
+        this.playSongFromQueue();
+      } else {
+        // We've reached the end of the queue
         if (this.isShuffledValue) {
+          console.log("End of queue reached in shuffle mode, shuffling queue");
           this.shuffleQueue();
           this.currentIndex = 0;
           this.playSongFromQueue();
-          return;
+        } else {
+          console.log("End of queue reached, stopping playback");
+          // Try to find recommended songs based on the last played song
+          this.findRecommendedSongs()
+            .then(recommendedSongs => {
+              if (recommendedSongs.length > 0) {
+                console.log("Found recommended songs, adding to queue");
+                // Add recommended songs to the queue
+                recommendedSongs.forEach(song => this.addToQueue(song));
+                // Play the first recommended song
+                this.next();
+              } else {
+                // No recommendations, just stop
+                this.isPlayingValue = false;
+                this.updatePlayPauseIcon();
+              }
+            })
+            .catch(error => {
+              console.error("Error finding recommended songs:", error);
+              this.isPlayingValue = false;
+              this.updatePlayPauseIcon();
+            });
         }
       }
+    } else {
+      console.log("No more songs in queue");
+      // Try to find other songs in the current view to add to the queue
+      this.findSongsInCurrentView()
+        .then(songs => {
+          if (songs.length > 0) {
+            console.log("Found songs in current view, adding to queue");
+            // Add songs to the queue
+            songs.forEach(song => this.addToQueue(song));
+            // Play the first found song
+            this.next();
+          } else {
+            // No more songs found, just stop
+            this.isPlayingValue = false;
+            this.updatePlayPauseIcon();
+          }
+        })
+        .catch(error => {
+          console.error("Error finding songs in current view:", error);
+          this.isPlayingValue = false;
+          this.updatePlayPauseIcon();
+        });
+    }
+  }
+
+  // Find recommended songs based on the current song
+  async findRecommendedSongs() {
+    // If no current song, return empty array
+    if (!this.currentSongValue) {
+      return [];
+    }
+
+    try {
+      console.log("Finding recommended songs for:", this.currentSongValue.title);
       
-      // Otherwise, just stop playback
-      this.isPlayingValue = false;
-      globalIsPlaying = false;
-      this.updatePlayPauseIcon();
+      // First, look for similar songs in the current view
+      const songsInView = await this.findSongsInCurrentView();
+      if (songsInView.length > 0) {
+        return songsInView;
+      }
       
-      // Show a notification that the queue is finished
-      this.showNotification("End of queue reached");
+      // If no songs found in the current view, try to find songs from the same artist
+      // or look for elements that might contain similar songs
+      const songElements = document.querySelectorAll('[data-song]');
+      const similarSongs = [];
+      
+      songElements.forEach(element => {
+        try {
+          const songData = JSON.parse(element.dataset.song);
+          // Check if this is a different song from the current one
+          if (songData.id !== this.currentSongValue.id) {
+            // Check if it's by the same artist
+            if (songData.artist.name === this.currentSongValue.artist.name) {
+              similarSongs.push(songData);
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing song data:", error);
+        }
+      });
+      
+      // Return found similar songs, up to 5
+      return similarSongs.slice(0, 5);
+    } catch (error) {
+      console.error("Error finding recommended songs:", error);
+      return [];
+    }
+  }
+
+  // Find songs in the current view that aren't already in the queue
+  async findSongsInCurrentView() {
+    try {
+      console.log("Finding songs in current view");
+      const songElements = document.querySelectorAll('[data-song]');
+      const songs = [];
+      const currentIds = this.queue.map(song => song.id);
+      
+      songElements.forEach(element => {
+        try {
+          const songData = JSON.parse(element.dataset.song);
+          // Only add songs that aren't already in the queue
+          if (!currentIds.includes(songData.id)) {
+            songs.push(songData);
+          }
+        } catch (error) {
+          console.error("Error parsing song data:", error);
+        }
+      });
+      
+      // Return found songs, up to 10
+      return songs.slice(0, 10);
+    } catch (error) {
+      console.error("Error finding songs in current view:", error);
+      return [];
     }
   }
 
@@ -654,7 +937,7 @@ export default class extends Controller {
   }
 
   // Add a method to show notifications
-  showNotification(message) {
+  showNotification(message, duration = 2000) {
     // Create notification element if it doesn't exist
     let notification = document.getElementById('player-notification');
     if (!notification) {
@@ -662,6 +945,25 @@ export default class extends Controller {
       notification.id = 'player-notification';
       notification.className = 'fixed bottom-20 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg transform transition-transform duration-300 translate-y-10 opacity-0 z-50';
       document.body.appendChild(notification);
+      
+      // Add click handler to dismiss notification
+      notification.addEventListener('click', () => {
+        notification.classList.remove('translate-y-0', 'opacity-100', 'persistent');
+        notification.classList.add('translate-y-10', 'opacity-0');
+      });
+    }
+    
+    // Clear any existing timeout
+    if (notification.timeoutId) {
+      clearTimeout(notification.timeoutId);
+      notification.timeoutId = null;
+    }
+    
+    // Add persistent class for longer notifications
+    if (duration > 3000) {
+      notification.classList.add('persistent');
+    } else {
+      notification.classList.remove('persistent');
     }
     
     // Set message and show notification
@@ -670,10 +972,10 @@ export default class extends Controller {
     notification.classList.add('translate-y-0', 'opacity-100');
     
     // Hide notification after a delay
-    setTimeout(() => {
-      notification.classList.remove('translate-y-0', 'opacity-100');
+    notification.timeoutId = setTimeout(() => {
+      notification.classList.remove('translate-y-0', 'opacity-100', 'persistent');
       notification.classList.add('translate-y-10', 'opacity-0');
-    }, 2000);
+    }, duration);
   }
 
   // Add a method to clear the queue
@@ -857,18 +1159,33 @@ export default class extends Controller {
       // Clear the pending playback flag
       this.pendingPlayback = false;
       
+      // Remove any needs-interaction indication
+      document.documentElement.removeAttribute('data-needs-interaction');
+      
       // Try to play the audio
       if (this.audio && this.audio.paused && this.audio.src) {
-        this.audio.play()
-          .then(() => {
+        // Show loading indicator
+        this.showNotification("Starting playback...", 2000);
+        
+        // Use our audio helper for improved playback
+        playWithFallbacks(
+          this.audio,
+          this.audio.src,
+          // Success callback
+          () => {
             console.log("Successfully resumed playback after user interaction");
             this.isPlayingValue = true;
             globalIsPlaying = true;
             this.updatePlayPauseIcon();
-          })
-          .catch(error => {
+            this.showNotification("Now playing: " + (this.currentSongValue?.title || "Unknown track"));
+          },
+          // Error callback
+          (error) => {
             console.error("Failed to resume playback after user interaction:", error);
-          });
+            this.handleAudioError();
+            this.showNotification("Unable to play this track");
+          }
+        );
       }
     }
   }

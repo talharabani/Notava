@@ -1,6 +1,7 @@
 <!-- Player Bar -->
 <div id="player-bar" class="fixed bottom-0 left-0 right-0 bg-indigo-950/90 backdrop-blur-sm border-t border-cyan-900/30 p-4 z-50 shadow-lg" data-controller="player">
-  <!-- Audio element is created dynamically in JavaScript -->
+  <!-- Hidden audio element -->
+  <audio id="global-audio-player" class="hidden"></audio>
   
   <div class="container mx-auto flex items-center justify-between">
     <!-- Song Info -->
@@ -123,6 +124,15 @@
   </div>
 </div>
 
+<!-- Now Playing Indicator Template (Hidden) -->
+<template id="now-playing-indicator-template">
+  <div class="now-playing-indicator">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</template>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     console.log('Player partial loaded');
@@ -139,6 +149,9 @@
         // Check if player controller exists
         if (window.playerController) {
           console.log('Global player controller found, ready to play songs');
+          
+          // Update UI to show now playing for any matching songs in the DOM
+          updateNowPlayingUI();
         } else {
           console.warn('Global player controller not found, trying to initialize');
           
@@ -149,6 +162,9 @@
             if (playerController) {
               window.playerController = playerController;
               console.log('Player controller initialized from Stimulus application');
+              
+              // Update UI to show now playing
+              updateNowPlayingUI();
             }
           }
         }
@@ -156,5 +172,64 @@
     } else {
       console.error('Player bar element not found on the page');
     }
+    
+    // Function to update UI to show currently playing song
+    function updateNowPlayingUI() {
+      if (!window.playerController || !window.playerController.currentSongValue) {
+        return;
+      }
+      
+      const currentSong = window.playerController.currentSongValue;
+      
+      // Find all song elements with matching song ID
+      try {
+        document.querySelectorAll('[data-song]').forEach(element => {
+          try {
+            const songData = JSON.parse(element.dataset.song);
+            if (songData.id === currentSong.id) {
+              markElementAsPlaying(element);
+            } else {
+              // Remove any existing now playing indicators
+              const existingIndicator = element.querySelector('.now-playing-indicator');
+              if (existingIndicator) {
+                existingIndicator.remove();
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing song data', e);
+          }
+        });
+      } catch (e) {
+        console.error('Error updating now playing UI', e);
+      }
+    }
+    
+    // Mark an element as the currently playing song
+    function markElementAsPlaying(element) {
+      // Don't add duplicate indicators
+      if (element.querySelector('.now-playing-indicator')) {
+        return;
+      }
+      
+      // Create the now playing indicator
+      const template = document.getElementById('now-playing-indicator-template');
+      if (template) {
+        const indicator = template.content.cloneNode(true);
+        
+        // Find a good place to insert it
+        const titleElement = element.querySelector('.song-title, .track-title, [class*="title"]');
+        if (titleElement) {
+          titleElement.insertBefore(indicator, titleElement.firstChild);
+        } else {
+          // If no title element, just add it to the beginning of the element
+          element.insertBefore(indicator, element.firstChild);
+        }
+      }
+    }
+    
+    // Listen for custom 'songChanged' event to update UI
+    document.addEventListener('songChanged', function(e) {
+      updateNowPlayingUI();
+    });
   });
 </script> 

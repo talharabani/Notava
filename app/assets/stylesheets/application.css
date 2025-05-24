@@ -81,8 +81,54 @@ button:hover, .button:hover {
 /* Search dropdown styling to ensure it's always on top */
 #search_dropdown {
   position: fixed !important;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  background-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+/* Ensure the search dropdown is always visible */
+body > #search_dropdown {
+  position: fixed !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+/* Search suggestions styling */
+#search_results [data-action="click->search#selectSuggestion"],
+#search_results [data-action="click->search#selectResult"] {
+  border-radius: 0.375rem;
+  transition: all 0.15s ease;
+}
+
+#search_results [data-action="click->search#selectSuggestion"]:hover,
+#search_results [data-action="click->search#selectResult"]:hover {
+  background-color: rgba(99, 102, 241, 0.3);
+  transform: translateX(2px);
+}
+
+#search_results .bg-indigo-800\/70 {
+  background-color: rgba(55, 48, 163, 0.7);
+  position: relative;
+}
+
+#search_results .bg-indigo-800\/70::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, #06b6d4, #3b82f6);
+  border-radius: 2px;
+}
+
+/* Section headers in search dropdown */
+#search_results .text-xs.text-cyan-300.mb-2.px-2.font-medium {
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
 }
 
 /* Add a subtle animation for the dropdown */
@@ -93,11 +139,11 @@ button:hover, .button:hover {
 @keyframes dropdown-fade-in {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -110,7 +156,7 @@ body.search-dropdown-active::after {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 9000;
+  z-index: 99990;
   pointer-events: none;
 }
 
