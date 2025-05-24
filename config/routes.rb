@@ -26,6 +26,7 @@ Rails.application.routes.draw do
   get 'charts', to: 'browse#charts', as: :charts
   get 'radio', to: 'browse#radio', as: :radio
   get 'wishlist', to: 'browse#wishlist', as: :wishlist
+  get 'genre/:id', to: 'browse#genre', as: :genre
   
   # Your Music section routes
   get 'songs', to: 'library#songs', as: :songs

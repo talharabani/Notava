@@ -1,0 +1,200 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-950 to-cyan-800">
+  <%= render 'shared/sidebar' %>
+  
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-y-auto px-4 ml-16 md:ml-64">
+    <!-- Top Navigation Bar -->
+    <%= render 'shared/topbar' %>
+
+    <div class="py-6">
+      <!-- Genre Header -->
+      <div class="mb-10">
+        <div class="relative rounded-2xl overflow-hidden">
+          <% 
+            # Set color based on genre name
+            colors = {
+              'Pop' => 'from-pink-900/90 to-fuchsia-700/70',
+              'Rock' => 'from-red-900/90 to-orange-700/70',
+              'Hip Hop' => 'from-amber-900/90 to-yellow-700/70',
+              'R&B' => 'from-purple-900/90 to-indigo-700/70',
+              'Electronic' => 'from-cyan-900/90 to-blue-700/70',
+              'Jazz' => 'from-green-900/90 to-emerald-700/70',
+              'Metal' => 'from-gray-900/90 to-gray-700/70',
+              'Alternative' => 'from-violet-900/90 to-purple-700/70',
+              'Country' => 'from-amber-800/90 to-orange-600/70'
+            }
+            genre_color = colors[@genre['name']] || 'from-indigo-900/90 to-cyan-700/70'
+          %>
+          <div class="absolute inset-0 bg-gradient-to-r <%= genre_color %> z-10"></div>
+          <div class="h-60 bg-gradient-to-r from-indigo-900/20 to-cyan-800/20 backdrop-blur-sm"></div>
+          <div class="absolute bottom-0 left-0 p-8 z-20 w-full md:w-2/3">
+            <h1 class="text-4xl font-bold mb-2"><%= @genre['name'] %> Music</h1>
+            <p class="text-gray-200 mb-6">Explore the best <%= @genre['name'] %> tracks, artists, and albums.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Tracks in Genre Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Top <%= @genre['name'] %> Tracks</h2>
+        </div>
+        
+        <!-- Tracks Table -->
+        <div class="bg-indigo-900/30 backdrop-blur-sm rounded-lg border border-cyan-900/20 overflow-hidden shadow-md mb-8">
+          <table class="min-w-full divide-y divide-cyan-900/30">
+            <thead class="bg-indigo-950/50">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-10">#</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Title</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Artist</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider">Album</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-20">Duration</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-cyan-300 uppercase tracking-wider w-16"></th>
+              </tr>
+            </thead>
+            <tbody class="bg-indigo-900/10 divide-y divide-cyan-900/30" data-controller="song-element">
+              <% if @genre_tracks['data'].present? %>
+                <% @genre_tracks['data'].each_with_index do |track, index| %>
+                  <tr class="hover:bg-indigo-800/30 cursor-pointer transition"
+                      data-action="click->song-element#playSong"
+                      data-song-element-song-value="<%= { 
+                        id: track['id'], 
+                        title: track['title'], 
+                        artist: { name: track['artist']['name'], id: track['artist']['id'] }, 
+                        album: { 
+                          title: track['album']['title'], 
+                          cover_medium: track['album']['cover_medium'] 
+                        }, 
+                        preview: track['preview'] 
+                      }.to_json %>">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400"><%= index + 1 %></td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <img src="<%= track['album']['cover_medium'] %>" class="w-10 h-10 rounded object-cover mr-3" alt="<%= track['title'] %>">
+                        <span class="font-medium"><%= track['title'] %></span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-300"><%= track['artist']['name'] %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-300 truncate max-w-xs"><%= track['album']['title'] %></td>
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-400">
+                      <%= track['duration'] ? "#{track['duration'] / 60}:#{(track['duration'] % 60).to_s.rjust(2, '0')}" : "0:30" %>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-right">
+                      <button class="text-gray-400 hover:text-cyan-400">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                <% end %>
+              <% else %>
+                <tr>
+                  <td colspan="6" class="px-4 py-8 text-center text-gray-400">
+                    No <%= @genre['name'] %> tracks available at the moment. Check back soon!
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Artists in Genre Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Popular <%= @genre['name'] %> Artists</h2>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <% if @genre_artists['data'].present? %>
+            <% @genre_artists['data'].first(10).each do |artist| %>
+              <!-- Artist Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md">
+                <div class="relative">
+                  <% if artist['picture_medium'] %>
+                    <img src="<%= artist['picture_medium'] %>" class="w-full aspect-square object-cover" alt="<%= artist['name'] %>">
+                  <% else %>
+                    <div class="w-full aspect-square flex items-center justify-center bg-indigo-800/50">
+                      <svg class="w-24 h-24 text-indigo-300/50" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    </div>
+                  <% end %>
+                  <div class="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-950/80 flex items-end">
+                    <div class="p-4 w-full">
+                      <h3 class="font-bold truncate"><%= artist['name'] %></h3>
+                      <p class="text-gray-300 text-sm"><%= artist['nb_fan'] ? "#{number_with_delimiter(artist['nb_fan'])} fans" : "Artist" %></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="col-span-full flex flex-col items-center justify-center py-16">
+              <p class="text-gray-400">No artists found for this genre.</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Albums Section -->
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold">Featured <%= @genre['name'] %> Albums</h2>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <% if @genre_albums['data'].present? %>
+            <% @genre_albums['data'].each do |album| %>
+              <!-- Album Card -->
+              <div class="bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" data-controller="song-element">
+                <div class="relative">
+                  <img src="<%= album['cover_medium'] %>" class="w-full aspect-square object-cover" alt="<%= album['title'] %>">
+                  <button class="absolute right-2 bottom-2 bg-cyan-600 bg-opacity-90 p-2 rounded-full cursor-pointer"
+                          data-action="click->song-element#playSong"
+                          data-song-element-song-value="<%= { 
+                            id: album['id'], 
+                            title: album['title'], 
+                            artist: { name: album['artist']['name'], id: album['artist']['id'] }, 
+                            album: { 
+                              title: album['title'], 
+                              cover_medium: album['cover_medium'] 
+                            }, 
+                            preview: album['tracks'] && album['tracks']['data'] && album['tracks']['data'].first ? album['tracks']['data'].first['preview'] : '' 
+                          }.to_json %>">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-medium truncate"><%= album['title'] %></h3>
+                  <p class="text-gray-400 text-sm truncate"><%= album['artist']['name'] %></p>
+                  <p class="text-xs text-cyan-400 mt-1">
+                    <%= album['tracks'] && album['tracks']['data'] ? "#{album['tracks']['data'].length} tracks" : "Album" %>
+                  </p>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="col-span-full flex flex-col items-center justify-center py-16">
+              <p class="text-gray-400">No albums found for this genre.</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <%= render 'shared/player' %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Genre page DOM loaded');
+    
+    // Set user interaction flag for autoplay
+    document.documentElement.setAttribute('data-user-interacted', 'true');
+  });
+</script> 

@@ -187,9 +187,9 @@
           <% if @genres['data'] %>
             <% colors = ['bg-blue-800/50', 'bg-purple-700/50', 'bg-cyan-700/50', 'bg-red-600/50', 'bg-green-700/50', 'bg-pink-700/50'] %>
             <% @genres['data'].first(9).each_with_index do |genre, index| %>
-              <div class="<%= colors[index % colors.length] %> rounded-lg p-12 text-center transition-transform hover:scale-105 border border-white/10 backdrop-blur-sm">
+              <%= link_to genre_path(genre['id']), class: "#{colors[index % colors.length]} rounded-lg p-12 text-center transition-transform hover:scale-105 border border-white/10 backdrop-blur-sm hover:shadow-lg" do %>
                 <h3 class="font-bold text-xl"><%= genre['name'] %></h3>
-              </div>
+              <% end %>
             <% end %>
           <% else %>
             <!-- Fallback Genre Cards -->

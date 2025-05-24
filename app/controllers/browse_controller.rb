@@ -149,4 +149,53 @@ class BrowseController < ApplicationController
       redirect_to new_user_session_path, notice: "Please sign in to view your wishlist"
     end
   end
+
+  def genre
+    deezer_service = DeezerService.new
+    
+    begin
+      # Get the genre
+      @genre_id = params[:id]
+      @genres = deezer_service.get_genres
+      
+      if @genres['data'] && @genres['data'].is_a?(Array)
+        @genre = @genres['data'].find { |g| g['id'].to_s == @genre_id.to_s }
+      end
+      
+      if @genre.nil?
+        # If genre is not found, redirect to discover page
+        redirect_to discover_path, alert: "Genre not found"
+        return
+      end
+      
+      # Get artists for this genre
+      @genre_artists = deezer_service.get_genre_artists(@genre_id, 10)
+      
+      # Get tracks for this genre (we'll simulate by using artists in this genre)
+      @genre_tracks = { 'data' => [] }
+      
+      if @genre_artists['data'] && @genre_artists['data'].is_a?(Array)
+        # Get top tracks from each artist in this genre
+        @genre_artists['data'].each do |artist|
+          artist_tracks = deezer_service.get_artist_top_tracks(artist['id'], 3)
+          if artist_tracks['data'] && artist_tracks['data'].is_a?(Array)
+            @genre_tracks['data'] += artist_tracks['data']
+          end
+        end
+        
+        # Limit to 20 tracks
+        @genre_tracks['data'] = @genre_tracks['data'].first(20)
+      end
+      
+      # Get some popular albums that might be related to this genre
+      @genre_albums = deezer_service.get_popular_albums(10)
+      
+    rescue => e
+      Rails.logger.error("Error fetching genre content: #{e.message}")
+      @genre = nil
+      @genre_artists = { 'data' => [] }
+      @genre_tracks = { 'data' => [] }
+      @genre_albums = { 'data' => [] }
+    end
+  end
 end 

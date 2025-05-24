@@ -130,11 +130,11 @@ export default class extends Controller {
     this.selectedIndex = -1;
     
     if (data.data && data.data.length > 0) {
-      let html = `<div class="text-xs text-gray-400 mb-2 px-2">Results for "${query}"</div>`;
+      let html = `<div class="text-xs text-cyan-300 mb-2 px-2 font-medium">Results for "${query}"</div>`;
       
       data.data.slice(0, 5).forEach(track => {
         html += `
-          <div class="flex items-center p-2 hover:bg-gray-700 rounded cursor-pointer" 
+          <div class="flex items-center p-2 hover:bg-indigo-800/70 rounded cursor-pointer transition duration-150" 
                data-action="click->search#selectResult"
                data-song='${JSON.stringify({
                  id: track.id,
@@ -143,12 +143,12 @@ export default class extends Controller {
                  album: { title: track.album.title, cover_medium: track.album.cover_medium },
                  preview: track.preview
                })}'>
-            <img src="${track.album.cover_small}" class="w-10 h-10 rounded mr-2" alt="${track.title}">
+            <img src="${track.album.cover_small}" class="w-10 h-10 rounded mr-2 shadow-sm" alt="${track.title}">
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-sm truncate">${track.title}</div>
-              <div class="text-gray-400 text-xs truncate">${track.artist.name}</div>
+              <div class="font-medium text-sm truncate text-white">${track.title}</div>
+              <div class="text-cyan-400 text-xs truncate">${track.artist.name}</div>
             </div>
-            <button class="ml-2 text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-600">
+            <button class="ml-2 text-cyan-400 hover:text-white p-1 rounded-full hover:bg-cyan-700/70 transition">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
               </svg>
@@ -158,9 +158,12 @@ export default class extends Controller {
       });
       
       html += `
-        <div class="border-t border-gray-700 mt-2 pt-2 px-2">
-          <a href="/search?query=${encodeURIComponent(query)}" class="text-blue-400 text-sm hover:underline">
-            See all results
+        <div class="border-t border-cyan-900/30 mt-2 pt-2 px-2">
+          <a href="/search?query=${encodeURIComponent(query)}" class="text-cyan-400 text-sm hover:underline flex items-center">
+            <span>See all results</span>
+            <svg class="w-4 h-4 ml-1" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+            </svg>
           </a>
         </div>
       `;
@@ -222,6 +225,24 @@ export default class extends Controller {
   
   showDropdown() {
     this.dropdownTarget.classList.remove('hidden');
+    
+    // Ensure the dropdown is visible by adding a small delay to recalculate position
+    setTimeout(() => {
+      // Check if dropdown is positioned offscreen or behind other elements
+      const rect = this.dropdownTarget.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // If dropdown would go offscreen, adjust position
+      if (rect.bottom > viewportHeight) {
+        this.dropdownTarget.style.maxHeight = `${viewportHeight - rect.top - 20}px`;
+      }
+      
+      // Force a repaint to ensure the dropdown is visible
+      this.dropdownTarget.style.opacity = '0.99';
+      setTimeout(() => {
+        this.dropdownTarget.style.opacity = '1';
+      }, 10);
+    }, 10);
   }
   
   hideDropdown() {

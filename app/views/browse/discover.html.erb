@@ -104,9 +104,9 @@
           <% if @genres['data'] %>
             <% colors = ['bg-blue-800/50', 'bg-purple-700/50', 'bg-cyan-700/50', 'bg-red-600/50', 'bg-green-700/50', 'bg-pink-700/50'] %>
             <% @genres['data'].first(12).each_with_index do |genre, index| %>
-              <div class="<%= colors[index % colors.length] %> rounded-lg p-6 text-center transition-transform hover:scale-105 border border-white/10 backdrop-blur-sm shadow-md">
+              <%= link_to genre_path(genre['id']), class: "#{colors[index % colors.length]} rounded-lg p-6 text-center transition-transform hover:scale-105 border border-white/10 backdrop-blur-sm shadow-md hover:shadow-lg" do %>
                 <h3 class="font-bold"><%= genre['name'] %></h3>
-              </div>
+              <% end %>
             <% end %>
           <% end %>
         </div>
