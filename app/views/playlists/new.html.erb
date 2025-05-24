@@ -1,0 +1,50 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-950 to-cyan-800">
+  <%= render 'shared/sidebar' %>
+  
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-y-auto px-4 ml-16 md:ml-64">
+    <!-- Top Navigation Bar -->
+    <%= render 'shared/topbar' %>
+
+    <div class="py-6">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2 text-white">Create New Playlist</h1>
+        <p class="text-gray-300">Organize your favorite tracks into a custom playlist</p>
+      </div>
+
+      <div class="bg-indigo-900/40 backdrop-blur-sm rounded-lg overflow-hidden p-6 max-w-2xl">
+        <%= form_with(model: @playlist, local: true) do |form| %>
+          <% if @playlist.errors.any? %>
+            <div class="mb-4 p-4 bg-red-900/50 rounded-lg">
+              <h2 class="text-red-300 font-semibold mb-2"><%= pluralize(@playlist.errors.count, "error") %> prohibited this playlist from being saved:</h2>
+              <ul class="list-disc pl-5 text-red-200">
+                <% @playlist.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="mb-6">
+            <%= form.label :name, class: "block text-cyan-300 font-medium mb-2" %>
+            <%= form.text_field :name, class: "bg-indigo-950/60 border border-cyan-900/60 text-white w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400", placeholder: "My Awesome Playlist" %>
+          </div>
+
+          <div class="mb-6">
+            <%= form.label :description, class: "block text-cyan-300 font-medium mb-2" %>
+            <%= form.text_area :description, rows: 4, class: "bg-indigo-950/60 border border-cyan-900/60 text-white w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400", placeholder: "Describe your playlist (optional)" %>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <%= form.submit "Create Playlist", class: "bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-full font-semibold transition shadow-md" %>
+            <%= link_to "Cancel", playlists_path, class: "text-gray-300 hover:text-white" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <%= render 'shared/player' %>
+</div>

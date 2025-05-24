@@ -16,6 +16,12 @@ export default class extends Controller {
     if (this.hasInputTarget) {
       this.inputTarget.addEventListener('keydown', this.handleKeydown.bind(this));
     }
+    
+    // Add window resize event to reposition dropdown
+    window.addEventListener('resize', this.repositionDropdown.bind(this));
+    
+    // Add scroll event to keep dropdown in view
+    window.addEventListener('scroll', this.repositionDropdown.bind(this));
   }
   
   disconnect() {
@@ -23,12 +29,42 @@ export default class extends Controller {
     if (this.hasInputTarget) {
       this.inputTarget.removeEventListener('keydown', this.handleKeydown.bind(this));
     }
+    window.removeEventListener('resize', this.repositionDropdown.bind(this));
+    window.removeEventListener('scroll', this.repositionDropdown.bind(this));
   }
   
   closeDropdown(event) {
     if (!this.element.contains(event.target)) {
       this.hideDropdown();
     }
+  }
+  
+  repositionDropdown() {
+    if (this.dropdownTarget.classList.contains('hidden')) {
+      return;
+    }
+    
+    // Get the input field's position and dimensions
+    const inputRect = this.inputTarget.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Position the dropdown relative to the input field
+    const dropdownWidth = Math.min(600, Math.max(300, inputRect.width));
+    const leftPosition = Math.max(10, Math.min(
+      viewportWidth - dropdownWidth - 10,
+      inputRect.left
+    ));
+    
+    // Set dropdown position and width
+    this.dropdownTarget.style.width = `${dropdownWidth}px`;
+    this.dropdownTarget.style.left = `${leftPosition}px`;
+    this.dropdownTarget.style.top = `${inputRect.bottom + window.scrollY + 5}px`;
+    
+    // Adjust height if needed to keep within viewport
+    const dropdownRect = this.dropdownTarget.getBoundingClientRect();
+    const maxHeight = viewportHeight - dropdownRect.top + window.scrollY - 20;
+    this.dropdownTarget.style.maxHeight = `${Math.max(200, maxHeight)}px`;
   }
   
   // Handle keyboard navigation
@@ -79,12 +115,12 @@ export default class extends Controller {
     // Remove highlight from all results
     results.forEach((result, index) => {
       if (index === this.selectedIndex) {
-        result.classList.add('bg-gray-700');
+        result.classList.add('bg-indigo-800/70');
         
         // Scroll into view if needed
         result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else {
-        result.classList.remove('bg-gray-700');
+        result.classList.remove('bg-indigo-800/70');
       }
     });
   }
@@ -224,29 +260,38 @@ export default class extends Controller {
   }
   
   showDropdown() {
+    // Add a special class to the body to prevent scrolling or interactions underneath
+    document.body.classList.add('search-dropdown-active');
+    
+    // First make sure the dropdown is visible
     this.dropdownTarget.classList.remove('hidden');
     
-    // Ensure the dropdown is visible by adding a small delay to recalculate position
+    // Then reposition it correctly
+    this.repositionDropdown();
+    
+    // Apply additional CSS to ensure it appears above everything
+    this.dropdownTarget.style.position = 'fixed';
+    this.dropdownTarget.style.zIndex = '9999';
+    
+    // Add a subtle animation
+    this.dropdownTarget.style.opacity = '0';
+    this.dropdownTarget.style.transform = 'translateY(-10px)';
+    
+    // Force a repaint to ensure the dropdown is visible
     setTimeout(() => {
-      // Check if dropdown is positioned offscreen or behind other elements
-      const rect = this.dropdownTarget.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      
-      // If dropdown would go offscreen, adjust position
-      if (rect.bottom > viewportHeight) {
-        this.dropdownTarget.style.maxHeight = `${viewportHeight - rect.top - 20}px`;
-      }
-      
-      // Force a repaint to ensure the dropdown is visible
-      this.dropdownTarget.style.opacity = '0.99';
-      setTimeout(() => {
-        this.dropdownTarget.style.opacity = '1';
-      }, 10);
+      this.dropdownTarget.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      this.dropdownTarget.style.opacity = '1';
+      this.dropdownTarget.style.transform = 'translateY(0)';
     }, 10);
   }
   
   hideDropdown() {
+    document.body.classList.remove('search-dropdown-active');
     this.dropdownTarget.classList.add('hidden');
     this.selectedIndex = -1;
+    
+    // Reset styles
+    this.dropdownTarget.style.transition = '';
+    this.dropdownTarget.style.transform = '';
   }
 } 

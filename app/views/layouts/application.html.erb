@@ -56,15 +56,61 @@
                 dropdown.classList.add('hidden');
               }
             });
+            
+            // Also close any open modals
+            const modals = document.querySelectorAll('[data-playlist-target="addToPlaylistModal"]');
+            modals.forEach(modal => {
+              if (!modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('modal-open');
+              }
+            });
           }
         });
       });
     </script>
+    
+    <style>
+      /* Modal styles */
+      body.modal-open::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 998;
+      }
+    </style>
   </head>
 
   <body class="min-h-full bg-gradient-to-br from-[#0d1b2a] to-[#415a77] text-[#e0e1dd]">
     <main class="min-h-screen">
       <%= yield %>
     </main>
+    
+    <!-- Add to Playlist Modal -->
+    <div data-controller="playlist">
+      <div class="hidden fixed inset-0 z-[999] flex items-center justify-center p-4" data-playlist-target="addToPlaylistModal">
+        <div class="bg-indigo-950/95 backdrop-blur-md rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+          <div class="px-6 py-4 border-b border-cyan-900/30 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-white">Add to Playlist</h3>
+            <button class="text-gray-400 hover:text-white" data-action="click->playlist#hideModal">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="max-h-96 overflow-y-auto" data-playlist-target="playlistList">
+            <!-- Playlist options will be rendered here -->
+            <div class="p-4 text-center text-gray-400">
+              <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500 mx-auto"></div>
+              <p class="mt-2">Loading playlists...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

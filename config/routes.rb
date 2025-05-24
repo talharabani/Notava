@@ -1,4 +1,13 @@
 Rails.application.routes.draw do
+  get "playlists/index"
+  get "playlists/show"
+  get "playlists/new"
+  get "playlists/create"
+  get "playlists/edit"
+  get "playlists/update"
+  get "playlists/destroy"
+  get "playlists/add_track"
+  get "playlists/remove_track"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
   devise_for :users
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -33,6 +42,14 @@ Rails.application.routes.draw do
   get 'albums', to: 'library#albums', as: :albums
   get 'artists', to: 'library#artists', as: :artists
   get 'history', to: 'library#history', as: :history
+  
+  # Playlist routes
+  resources :playlists do
+    member do
+      post 'add_track'
+      delete 'remove_track/:track_id', to: 'playlists#remove_track', as: 'remove_track'
+    end
+  end
   
   # Music API routes
   resources :music, only: [] do

@@ -1,0 +1,102 @@
+<!-- Radio & Podcasts Page -->
+<div class="p-8">
+  <h1 class="text-3xl font-bold mb-6 text-white">Radio & Podcasts</h1>
+  
+  <!-- Radio Stations -->
+  <section class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Featured Radio Stations</h2>
+      <a href="#" class="text-cyan-400 hover:text-cyan-300 text-sm">View All</a>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <% if @radio_stations && @radio_stations.any? %>
+        <% @radio_stations.each do |station| %>
+          <div class="bg-indigo-900/40 backdrop-blur-sm rounded-lg overflow-hidden hover:bg-indigo-800/40 transition duration-300">
+            <div class="relative group">
+              <img src="<%= station['picture'] %>" alt="<%= station['name'] %>" class="w-full aspect-square object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/80 to-transparent"></div>
+              <button class="absolute bottom-3 right-3 bg-cyan-500 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="p-4">
+              <h3 class="font-semibold text-white mb-1 truncate"><%= station['name'] %></h3>
+              <p class="text-xs text-gray-300 truncate"><%= station['description'] %></p>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="col-span-full text-center py-10 text-gray-400">
+          <p>No radio stations available at the moment. Check back later!</p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+  
+  <!-- Popular Podcasts -->
+  <section class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Popular Podcasts</h2>
+      <a href="#" class="text-cyan-400 hover:text-cyan-300 text-sm">View All</a>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+      <% if @podcasts && @podcasts.any? %>
+        <% @podcasts.each do |podcast| %>
+          <div class="bg-indigo-900/40 backdrop-blur-sm rounded-lg overflow-hidden hover:bg-indigo-800/40 transition duration-300 flex">
+            <div class="w-28 h-28 flex-shrink-0">
+              <img src="<%= podcast['picture'] %>" alt="<%= podcast['name'] %>" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1 p-4">
+              <h3 class="font-semibold text-white mb-1"><%= podcast['name'] %></h3>
+              <p class="text-xs text-cyan-400 mb-2"><%= podcast['author'] %></p>
+              <p class="text-xs text-gray-300 line-clamp-2"><%= podcast['description'] %></p>
+            </div>
+            <div class="p-4 flex items-center">
+              <button class="bg-cyan-500 rounded-full p-2 shadow-lg">
+                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="col-span-full text-center py-10 text-gray-400">
+          <p>No podcasts available at the moment. Check back later!</p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+  
+  <!-- Genre-based Radio -->
+  <section class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Browse by Genre</h2>
+    </div>
+    
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <% if @genres && @genres['data'] && @genres['data'].any? %>
+        <% @genres['data'].each do |genre| %>
+          <%= link_to genre_path(genre['id']), class: "bg-indigo-900/40 backdrop-blur-sm rounded-lg overflow-hidden hover:bg-indigo-800/40 transition duration-300" do %>
+            <div class="relative">
+              <img src="<%= genre['picture_medium'] %>" alt="<%= genre['name'] %>" class="w-full aspect-square object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/80 to-transparent flex items-end">
+                <div class="p-4">
+                  <h3 class="font-semibold text-white mb-1"><%= genre['name'] %></h3>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      <% else %>
+        <div class="col-span-full text-center py-10 text-gray-400">
+          <p>No genres available at the moment. Check back later!</p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+</div> 

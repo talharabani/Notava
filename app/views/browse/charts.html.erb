@@ -1,0 +1,126 @@
+<!-- Charts Page -->
+<div class="p-8" data-controller="playlist">
+  <h1 class="text-3xl font-bold mb-6 text-white">Top Charts</h1>
+  
+  <!-- Top Tracks -->
+  <section class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Top Tracks This Week</h2>
+    </div>
+    
+    <div class="bg-indigo-900/40 backdrop-blur-sm rounded-lg overflow-hidden">
+      <% if @chart_tracks && @chart_tracks['data'] && @chart_tracks['data'].any? %>
+        <table class="w-full">
+          <thead>
+            <tr class="text-left text-gray-400 text-sm border-b border-gray-700">
+              <th class="p-4 w-10">#</th>
+              <th class="p-4">Title</th>
+              <th class="p-4 hidden md:table-cell">Artist</th>
+              <th class="p-4 hidden lg:table-cell">Album</th>
+              <th class="p-4 w-20 text-right">
+                <svg class="w-5 h-5 inline" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                </svg>
+              </th>
+              <th class="p-4 w-20"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @chart_tracks['data'].each_with_index do |track, index| %>
+              <tr class="text-white border-b border-gray-700/50 hover:bg-indigo-800/40 group">
+                <td class="p-4 text-gray-400"><%= index + 1 %></td>
+                <td class="p-4">
+                  <div class="flex items-center">
+                    <img src="<%= track['album']['cover_small'] %>" alt="<%= track['title'] %>" class="w-10 h-10 mr-3 rounded">
+                    <span class="truncate"><%= track['title'] %></span>
+                  </div>
+                </td>
+                <td class="p-4 text-gray-300 hidden md:table-cell truncate"><%= track['artist']['name'] %></td>
+                <td class="p-4 text-gray-300 hidden lg:table-cell truncate"><%= track['album']['title'] %></td>
+                <td class="p-4 text-gray-400 text-right"><%= track['duration'] ? "#{track['duration'] / 60}:#{(track['duration'] % 60).to_s.rjust(2, '0')}" : "0:00" %></td>
+                <td class="p-4 text-right">
+                  <div class="flex items-center justify-end space-x-2">
+                    <button class="text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" title="Add to playlist"
+                            data-action="click->playlist#showAddToPlaylistModal" data-track-id="<%= track['id'] %>">
+                      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                      </svg>
+                    </button>
+                    <button class="text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity" 
+                            data-song='<%= {id: track['id'], title: track['title'], artist: {name: track['artist']['name'], id: track['artist']['id']}, album: {title: track['album']['title'], cover_medium: track['album']['cover_medium']}, preview: track['preview']}.to_json %>'
+                            data-action="click->player#playSong">
+                      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="text-center py-10 text-gray-400">
+          <p>No chart data available at the moment. Check back later!</p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+  
+  <!-- Top Albums -->
+  <section class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Top Albums</h2>
+    </div>
+    
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <% if @chart_albums && @chart_albums['data'] && @chart_albums['data'].any? %>
+        <% @chart_albums['data'].each_with_index do |album, index| %>
+          <div class="bg-indigo-900/40 backdrop-blur-sm rounded-lg overflow-hidden hover:bg-indigo-800/40 transition duration-300">
+            <div class="relative group">
+              <img src="<%= album['cover_medium'] %>" alt="<%= album['title'] %>" class="w-full aspect-square object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div class="absolute top-2 left-2 bg-cyan-500 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold">
+                <%= index + 1 %>
+              </div>
+              <button class="absolute bottom-3 right-3 bg-cyan-500 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="p-4">
+              <h3 class="font-medium text-white mb-1 truncate"><%= album['title'] %></h3>
+              <p class="text-xs text-gray-300 truncate"><%= album['artist']['name'] %></p>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="col-span-full text-center py-10 text-gray-400">
+          <p>No chart data available at the moment. Check back later!</p>
+        </div>
+      <% end %>
+    </div>
+  </section>
+  
+  <!-- Chart History -->
+  <section class="mb-10">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold text-white">Chart History</h2>
+      <div class="flex space-x-2">
+        <select class="bg-indigo-900/40 text-white text-sm border border-cyan-900/40 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cyan-400">
+          <option>This Week</option>
+          <option>Last Week</option>
+          <option>Last Month</option>
+          <option>All Time</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="bg-indigo-900/40 backdrop-blur-sm rounded-lg p-4">
+      <div class="text-center py-6 text-gray-400">
+        <p>Historical chart data will be available soon!</p>
+      </div>
+    </div>
+  </section>
+</div> 

@@ -1,6 +1,6 @@
 <!-- Top Navigation Bar -->
-<div class="bg-transparent py-4 flex items-center justify-between border-b border-cyan-900/30">
-  <div class="relative flex items-center flex-1 max-w-3xl mx-4" data-controller="search" style="position: relative; z-index: 50;">
+<div class="bg-transparent py-4 flex items-center justify-between border-b border-cyan-900/30 relative">
+  <div class="relative flex items-center flex-1 max-w-3xl mx-4" data-controller="search" style="position: relative; z-index: 9999;">
     <%= form_with url: search_path, method: :get, class: "w-full relative", data: { turbo_frame: "search_results", action: "submit->search#submit" } do |f| %>
       <div class="relative">
         <svg class="absolute left-3 top-2.5 w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="currentColor">
@@ -11,7 +11,7 @@
                          data: { action: "input->search#search keydown->search#handleKeydown", search_target: "input" }, 
                          autocomplete: "off" %>
       </div>
-      <div id="search_dropdown" class="hidden absolute left-0 right-0 mt-2 bg-indigo-950/90 backdrop-blur-md rounded-lg shadow-xl overflow-hidden z-[100] max-h-96 overflow-y-auto border border-cyan-600/30" data-search-target="dropdown">
+      <div id="search_dropdown" class="hidden fixed mt-2 bg-indigo-950/90 backdrop-blur-md rounded-lg shadow-xl overflow-hidden z-[9999] max-h-96 overflow-y-auto border border-cyan-600/30" data-search-target="dropdown" style="min-width: 300px; width: 100%; max-width: 600px; left: 50%; transform: translateX(-50%);">
         <div id="search_results" class="p-2">
           <!-- Search results will appear here -->
         </div>

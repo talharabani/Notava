@@ -553,9 +553,11 @@ export default class extends Controller {
     this.volumeValue = percentage;
     this.audio.volume = percentage;
     
-    if (this.hasVolumeBarTarget) {
-      this.volumeBarTarget.style.width = `${percentage * 100}%`;
-    }
+    // Update all volume bars with the same class
+    const volumeBars = document.querySelectorAll('.volume-bar');
+    volumeBars.forEach(bar => {
+      bar.style.width = `${percentage * 100}%`;
+    });
     
     // Save volume preference
     if (typeof localStorage !== 'undefined') {

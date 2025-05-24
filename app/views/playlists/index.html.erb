@@ -1,0 +1,72 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-950 to-cyan-800">
+  <%= render 'shared/sidebar' %>
+  
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-y-auto px-4 ml-16 md:ml-64">
+    <!-- Top Navigation Bar -->
+    <%= render 'shared/topbar' %>
+
+    <div class="py-6">
+      <!-- Header -->
+      <div class="mb-8 flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold mb-2 text-white">Your Playlists</h1>
+          <p class="text-gray-300">Manage and organize your music collections</p>
+        </div>
+        <%= link_to new_playlist_path, class: "bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-full text-sm font-medium transition shadow-md" do %>
+          <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          Create Playlist
+        <% end %>
+      </div>
+
+      <!-- Playlists Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <% if @playlists.any? %>
+          <% @playlists.each do |playlist| %>
+            <!-- Playlist Card -->
+            <%= link_to playlist_path(playlist), class: "bg-indigo-900/40 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden transition-transform hover:scale-105 shadow-md" do %>
+              <div class="relative">
+                <img src="<%= playlist.cover_image %>" class="w-full aspect-square object-cover" alt="<%= playlist.name %>">
+                <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/80 to-transparent flex items-end">
+                  <div class="p-4 w-full">
+                    <div class="flex justify-between items-center w-full">
+                      <div>
+                        <span class="text-xs text-cyan-400"><%= playlist.playlist_tracks.count %> tracks</span>
+                      </div>
+                      <button class="bg-cyan-600 bg-opacity-90 p-2 rounded-full cursor-pointer">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="p-3">
+                <h3 class="font-medium text-white truncate"><%= playlist.name %></h3>
+                <p class="text-gray-400 text-sm truncate"><%= playlist.description.present? ? playlist.description : "Created by you" %></p>
+              </div>
+            <% end %>
+          <% end %>
+        <% else %>
+          <!-- Empty State -->
+          <div class="col-span-full flex flex-col items-center justify-center py-16">
+            <svg class="w-16 h-16 text-indigo-800" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/>
+            </svg>
+            <h3 class="mt-4 text-xl font-medium text-white">No playlists yet</h3>
+            <p class="mt-2 text-gray-400">Create your first playlist to start organizing your music</p>
+            <%= link_to new_playlist_path, class: "mt-4 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-2 px-6 rounded-full transition shadow-md" do %>
+              Create Playlist
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Player Bar -->
+  <%= render 'shared/player' %>
+</div>

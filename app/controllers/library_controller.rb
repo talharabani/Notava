@@ -9,34 +9,18 @@ class LibraryController < ApplicationController
       # For now, we'll create a simulated library with some chart tracks
       @library_tracks = deezer_service.get_chart(30)
       
-      # Create some mock playlists
-      @playlists = [
-        {
-          'id' => 1,
-          'title' => 'My Favorites',
-          'nb_tracks' => 12,
-          'picture_medium' => 'https://e-cdns-images.dzcdn.net/images/cover/1cac28532dc6d689f0ccba5a3b71b9d0/500x500-000000-80-0-0.jpg',
-          'tracks' => deezer_service.get_chart(12)['data'] || []
-        },
-        {
-          'id' => 2,
-          'title' => 'Workout Mix',
-          'nb_tracks' => 8,
-          'picture_medium' => 'https://e-cdns-images.dzcdn.net/images/cover/7f962f63ec89d0348958782bdb2c7b2a/500x500-000000-80-0-0.jpg',
-          'tracks' => deezer_service.get_chart(8)['data'] || []
-        },
-        {
-          'id' => 3,
-          'title' => 'Chill Vibes',
-          'nb_tracks' => 10,
-          'picture_medium' => 'https://e-cdns-images.dzcdn.net/images/cover/5baddb938d5ecd8f0249546ede7505d6/500x500-000000-80-0-0.jpg',
-          'tracks' => deezer_service.get_chart(10)['data'] || []
-        }
-      ]
+      # Get the user's playlists
+      @user_playlists = current_user.playlists
+      
+      # Create some mock playlists if user has none
+      if @user_playlists.empty? && !current_user.playlists.create(name: "My First Playlist", description: "Songs I love").persisted?
+        # Creation failed, continue without mock data
+        Rails.logger.error("Failed to create initial playlist for user")
+      end
     rescue => e
       Rails.logger.error("Error fetching library songs: #{e.message}")
       @library_tracks = { 'data' => [] }
-      @playlists = []
+      @user_playlists = []
     end
   end
   
