@@ -42,17 +42,23 @@ export default class extends Controller {
   
   showAddToPlaylistModal(event) {
     event.preventDefault();
+    event.stopPropagation();
     
     const trackId = event.currentTarget.dataset.trackId;
     let trackData = null;
     
-    // Try to get track data from various sources
+    // Try to get track data directly from the button's data-song attribute
     try {
-      const trackDataElement = event.currentTarget.closest('tr')?.querySelector('[data-song]') || 
-                             event.currentTarget.closest('[data-song]');
-      
-      if (trackDataElement) {
-        trackData = JSON.parse(trackDataElement.dataset.song);
+      if (event.currentTarget.dataset.song) {
+        trackData = JSON.parse(event.currentTarget.dataset.song);
+      } else {
+        // Fallback to previous method
+        const trackDataElement = event.currentTarget.closest('tr')?.querySelector('[data-song]') || 
+                               event.currentTarget.closest('[data-song]');
+        
+        if (trackDataElement) {
+          trackData = JSON.parse(trackDataElement.dataset.song);
+        }
       }
     } catch (e) {
       console.error("Error parsing track data:", e);
@@ -223,12 +229,22 @@ export default class extends Controller {
       requestBody.track_data = this.trackData;
     }
     
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) {
+      console.error("CSRF token not found");
+      this.showNotification("Error: CSRF token not found");
+      button.innerHTML = originalContent;
+      button.disabled = false;
+      return;
+    }
+    
     // Make a request to add the track to the playlist
     fetch(`/playlists/${playlistId}/add_track`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content
+        'X-CSRF-Token': csrfToken
       },
       body: JSON.stringify(requestBody)
     })
@@ -248,9 +264,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error("Error adding track to playlist:", error);
-      this.showNotification('Failed to add to playlist');
-      
-      // Restore button state
+      this.showNotification("Error adding track to playlist");
       button.innerHTML = originalContent;
       button.disabled = false;
     });

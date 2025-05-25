@@ -218,5 +218,25 @@
     
     // Set user interaction flag for autoplay
     document.documentElement.setAttribute('data-user-interacted', 'true');
+    
+    // Initialize search dropdown
+    const searchInput = document.querySelector('[data-search-target="input"]');
+    if (searchInput) {
+      // Focus the search input when pressing '/' key
+      document.addEventListener('keydown', function(event) {
+        // Check if not in an input or textarea element
+        if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          event.preventDefault();
+          searchInput.focus();
+        }
+      });
+      
+      // Show suggestions on focus if no current search term
+      searchInput.addEventListener('focus', function() {
+        if (window.searchController && typeof window.searchController.showSuggestions === 'function') {
+          window.searchController.showSuggestions();
+        }
+      });
+    }
   });
 </script>

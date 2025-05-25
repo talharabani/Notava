@@ -13,6 +13,8 @@ export default class extends Controller {
     song: Object,
     addToQueue: { type: Boolean, default: false }
   }
+  
+  static targets = ["addToPlaylistButton"]
 
   connect() {
     console.log("Song element controller connected");
@@ -24,9 +26,6 @@ export default class extends Controller {
     if (!this.element.dataset.song && this.hasSongValue) {
       this.element.dataset.song = JSON.stringify(this.songValue);
     }
-    
-    // Add the "Add to Playlist" button if it doesn't exist
-    this.addPlaylistButton();
   }
   
   /**
@@ -319,59 +318,6 @@ export default class extends Controller {
     }
   }
 
-  // Add a button to add the song to a playlist
-  addPlaylistButton() {
-    // Skip if this element already has an add-to-playlist button
-    if (this.element.querySelector('.add-to-playlist-button')) {
-      return;
-    }
-    
-    // Get song data
-    let songData;
-    try {
-      songData = this.element.dataset.song || 
-                (this.hasSongValue ? JSON.stringify(this.songValue) : null);
-      
-      if (!songData) {
-        return;
-      }
-      
-      const song = JSON.parse(songData);
-      
-      // Create the button
-      const playlistButton = document.createElement('button');
-      playlistButton.className = 'add-to-playlist-button absolute right-2 top-2 bg-indigo-800/80 rounded-full p-1.5 text-white hover:bg-cyan-700 transition-all z-10';
-      playlistButton.setAttribute('title', 'Add to playlist');
-      playlistButton.setAttribute('data-track-id', song.id);
-      playlistButton.setAttribute('data-action', 'click->song-element#addToPlaylist');
-      
-      // Create the icon
-      playlistButton.innerHTML = `
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z"/>
-        </svg>
-      `;
-      
-      // If the element is a table row, add the button to a suitable cell
-      if (this.element.tagName === 'TR') {
-        const lastCell = this.element.querySelector('td:last-child');
-        if (lastCell) {
-          playlistButton.className = 'add-to-playlist-button ml-2 inline-flex bg-indigo-800/80 rounded-full p-1.5 text-white hover:bg-cyan-700 transition-all';
-          lastCell.appendChild(playlistButton);
-        }
-      } else if (this.element.classList.contains('relative')) {
-        // If the element is already positioned relatively, just append the button
-        this.element.appendChild(playlistButton);
-      } else {
-        // Otherwise, make the element relatively positioned and append the button
-        this.element.style.position = 'relative';
-        this.element.appendChild(playlistButton);
-      }
-    } catch (error) {
-      console.error("Error adding playlist button:", error);
-    }
-  }
-  
   // Handle click on the "Add to Playlist" button
   addToPlaylist(event) {
     event.preventDefault();
@@ -398,35 +344,8 @@ export default class extends Controller {
       );
       
       if (playlistController) {
-        // Create a synthetic event to trigger the modal
-        const customEvent = new CustomEvent('click', {
-          bubbles: true,
-          cancelable: true
-        });
-        
-        // Add the dataset property to the event
-        Object.defineProperty(customEvent, 'currentTarget', {
-          value: {
-            dataset: {
-              trackId: trackId
-            },
-            closest: function() {
-              return {
-                querySelector: function() {
-                  return {
-                    dataset: {
-                      song: songData
-                    }
-                  };
-                }
-              };
-            }
-          },
-          writable: false
-        });
-        
         // Call the method to show the "Add to Playlist" modal
-        playlistController.showAddToPlaylistModal(customEvent);
+        playlistController.showAddToPlaylistModalGlobal(trackId, songData);
       } else {
         console.error("Playlist controller not found");
         

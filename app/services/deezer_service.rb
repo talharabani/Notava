@@ -10,8 +10,20 @@ class DeezerService
   def search_tracks(query, limit = 10)
     return { data: [] } if query.blank?
     
+    puts "DeezerService: Searching for '#{query}' with limit #{limit}"
     response = self.class.get("/search", query: { q: query, limit: limit })
-    parse_response(response)
+    puts "DeezerService: Response status: #{response.code}"
+    puts "DeezerService: Response body: #{response.body[0..300]}..." # Show first 300 chars of response
+    
+    result = parse_response(response)
+    
+    if result['data']
+      puts "DeezerService: Found #{result['data'].length} results"
+    else
+      puts "DeezerService: No data in response"
+    end
+    
+    result
   end
 
   def get_chart(limit = 10)
@@ -120,13 +132,22 @@ class DeezerService
 
   def parse_response(response)
     if response.success?
-      JSON.parse(response.body)
+      begin
+        result = JSON.parse(response.body)
+        if result.is_a?(Hash) && result['error']
+          puts "DeezerService: Error in response: #{result['error']}"
+        end
+        result
+      rescue JSON::ParserError => e
+        puts "DeezerService: JSON parse error: #{e.message}"
+        { error: "Invalid response from Deezer API", data: [] }
+      end
     else
+      puts "DeezerService: HTTP error: #{response.code}"
       { error: "API request failed with status #{response.code}", data: [] }
     end
-  rescue JSON::ParserError
-    { error: "Invalid response from Deezer API", data: [] }
   rescue StandardError => e
+    puts "DeezerService: Exception: #{e.message}"
     { error: "Error: #{e.message}", data: [] }
   end
 end 

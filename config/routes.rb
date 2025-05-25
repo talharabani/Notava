@@ -28,6 +28,9 @@ Rails.application.routes.draw do
   # Search route
   get 'search', to: 'home#search', as: :search
   
+  # Audio proxy for handling CORS issues
+  get 'audio-proxy', to: 'audio_proxy#proxy', as: :audio_proxy
+  
    # Browse section routes
   get 'discover', to: 'browse#discover', as: :discover
   get 'new_releases', to: 'browse#new_releases', as: :new_releases

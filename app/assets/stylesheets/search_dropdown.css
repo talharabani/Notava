@@ -1,0 +1,159 @@
+/* 
+ * SEARCH DROPDOWN - PRODUCTION READY
+ * A comprehensive solution for search dropdown that always appears
+ * on top of other content regardless of page context
+ */
+
+/* ===== DROPDOWN CONTAINER ===== */
+#search_dropdown {
+  /* Essential positioning */
+  position: fixed !important;
+  z-index: 2147483647 !important; /* Maximum z-index */
+  
+  /* Visual styling */
+  background-color: rgba(15, 23, 42, 0.98) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 0.75rem !important;
+  
+  /* Size and constraints */
+  min-width: 300px !important;
+  max-width: 600px !important;
+  max-height: calc(90vh - 80px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* Animation */
+  animation: dropdown-fade-in 0.2s ease-out !important;
+  
+  /* Ensure proper behavior */
+  transform: none !important; /* Prevent transform inheritance */
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  
+  /* Prevent text selection during navigation */
+  user-select: none !important;
+  
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.5) rgba(15, 23, 42, 0.3);
+}
+
+/* Webkit scrollbar styling */
+#search_dropdown::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+#search_dropdown::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3) !important;
+}
+
+#search_dropdown::-webkit-scrollbar-thumb {
+  background-color: rgba(99, 102, 241, 0.5) !important;
+  border-radius: 3px !important;
+}
+
+/* ===== SEARCH RESULTS ITEMS ===== */
+#search_results .search-result-item,
+#search_results [data-action="click->search#selectSuggestion"],
+#search_results [data-action="click->search#selectResult"] {
+  border-radius: 0.5rem !important;
+  transition: all 0.15s ease !important;
+  padding: 0.75rem 1rem !important;
+  margin: 0.25rem 0.5rem !important;
+}
+
+#search_results .search-result-item:hover,
+#search_results [data-action="click->search#selectSuggestion"]:hover,
+#search_results [data-action="click->search#selectResult"]:hover {
+  background-color: rgba(99, 102, 241, 0.3) !important;
+  transform: translateX(2px) !important;
+}
+
+/* Selected item style (for keyboard navigation) */
+#search_results .bg-indigo-800\/70,
+#search_results .selected {
+  background-color: rgba(79, 70, 229, 0.5) !important;
+  position: relative !important;
+}
+
+#search_results .bg-indigo-800\/70::before,
+#search_results .selected::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 3px !important;
+  background: linear-gradient(to bottom, #06b6d4, #3b82f6) !important;
+  border-radius: 2px !important;
+}
+
+/* ===== SEARCH DROPDOWN SECTIONS ===== */
+#search_results .text-xs.text-cyan-300.mb-2.px-2.font-medium {
+  margin-top: 1rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-size: 0.7rem !important;
+  padding-left: 1rem !important;
+  color: #06b6d4 !important;
+}
+
+/* First section header doesn't need top margin */
+#search_results .text-xs.text-cyan-300.mb-2.px-2.font-medium:first-child {
+  margin-top: 0.5rem !important;
+}
+
+/* ===== DROPDOWN BACKDROP ===== */
+body.search-dropdown-active::after {
+  content: '' !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  z-index: 2147483646 !important; /* Just below the dropdown */
+  pointer-events: none !important;
+}
+
+/* ===== ANIMATION ===== */
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0 !important;
+    transform: translateY(-10px) scale(0.98) !important;
+  }
+  to {
+    opacity: 1 !important;
+    transform: translateY(0) scale(1) !important;
+  }
+}
+
+/* ===== CROSS-BROWSER COMPATIBILITY ===== */
+/* Fix for Firefox */
+@-moz-document url-prefix() {
+  #search_dropdown {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7) !important;
+  }
+}
+
+/* Fix for Safari */
+@media not all and (min-resolution:.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    #search_dropdown {
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+  }
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 640px) {
+  #search_dropdown {
+    width: calc(100% - 20px) !important;
+    max-width: none !important;
+    left: 10px !important;
+    right: 10px !important;
+  }
+} 

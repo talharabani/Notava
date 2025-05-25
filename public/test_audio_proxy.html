@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Audio Proxy Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .test-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    input[type=text] {
+      width: 100%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+    }
+    pre {
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Audio Proxy Test Page</h1>
+  <p>This page helps test if the audio proxy is working correctly.</p>
+  
+  <div class="test-card">
+    <h2>Test 1: Direct HEAD Request to Proxy</h2>
+    <input type="text" id="testUrl" placeholder="Enter audio URL to test" value="https://cdns-preview-8.dzcdn.net/stream/c-8d5a3b6bd08da9c0030d12b147988a29-4.mp3">
+    <button onclick="testHead()">Test HEAD Request</button>
+    <div id="headResult"></div>
+  </div>
+  
+  <div class="test-card">
+    <h2>Test 2: Play Audio via Proxy</h2>
+    <input type="text" id="audioUrl" placeholder="Enter audio URL to play" value="https://cdns-preview-8.dzcdn.net/stream/c-8d5a3b6bd08da9c0030d12b147988a29-4.mp3">
+    <button onclick="testAudio()">Test Audio Playback</button>
+    <div>
+      <audio id="audioPlayer" controls></audio>
+    </div>
+    <div id="audioResult"></div>
+  </div>
+  
+  <div class="test-card">
+    <h2>Test 3: Byte Range Support</h2>
+    <p>Tests if the proxy supports byte ranges (necessary for seeking)</p>
+    <button onclick="testByteRange()">Test Byte Range</button>
+    <div id="rangeResult"></div>
+  </div>
+  
+  <div class="test-card">
+    <h2>Test 4: Fetch Response Headers</h2>
+    <button onclick="testHeaders()">Check Response Headers</button>
+    <pre id="headersResult"></pre>
+  </div>
+  
+  <script>
+    // Test HEAD request to proxy
+    async function testHead() {
+      const url = document.getElementById('testUrl').value;
+      const resultDiv = document.getElementById('headResult');
+      
+      resultDiv.innerHTML = 'Testing...';
+      
+      try {
+        const proxyUrl = `/audio-proxy?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl, { 
+          method: 'HEAD'
+        });
+        
+        if (response.ok) {
+          resultDiv.innerHTML = `<span class="success">Success!</span> HEAD request to proxy returned ${response.status} ${response.statusText}.<br>` +
+                               `Content-Type: ${response.headers.get('Content-Type')}<br>` +
+                               `Content-Length: ${response.headers.get('Content-Length')}<br>` +
+                               `Accept-Ranges: ${response.headers.get('Accept-Ranges')}`;
+        } else {
+          resultDiv.innerHTML = `<span class="error">Error!</span> HEAD request to proxy returned ${response.status} ${response.statusText}.`;
+          
+          // Try to get error message
+          try {
+            const errorData = await response.json();
+            resultDiv.innerHTML += `<br>Error message: ${errorData.error || 'Unknown'}`;
+          } catch (e) {
+            // Couldn't parse JSON error
+          }
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="error">Error!</span> Failed to make HEAD request: ${error.message}`;
+      }
+    }
+    
+    // Test audio playback via proxy
+    function testAudio() {
+      const url = document.getElementById('audioUrl').value;
+      const audioPlayer = document.getElementById('audioPlayer');
+      const resultDiv = document.getElementById('audioResult');
+      
+      resultDiv.innerHTML = 'Loading audio...';
+      
+      try {
+        const proxyUrl = `/audio-proxy?url=${encodeURIComponent(url)}`;
+        audioPlayer.src = proxyUrl;
+        
+        audioPlayer.oncanplay = function() {
+          resultDiv.innerHTML = `<span class="success">Success!</span> Audio loaded and ready to play.`;
+        };
+        
+        audioPlayer.onerror = function() {
+          resultDiv.innerHTML = `<span class="error">Error!</span> Audio playback error: ${audioPlayer.error.code} ${audioPlayer.error.message || ''}`;
+        };
+        
+        // Start loading the audio
+        audioPlayer.load();
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="error">Error!</span> Failed to set up audio: ${error.message}`;
+      }
+    }
+    
+    // Test byte range support
+    async function testByteRange() {
+      const url = document.getElementById('audioUrl').value || document.getElementById('testUrl').value;
+      const resultDiv = document.getElementById('rangeResult');
+      
+      resultDiv.innerHTML = 'Testing byte range support...';
+      
+      try {
+        const proxyUrl = `/audio-proxy?url=${encodeURIComponent(url)}`;
+        
+        // Request only first 1000 bytes
+        const response = await fetch(proxyUrl, {
+          headers: {
+            'Range': 'bytes=0-999'
+          }
+        });
+        
+        if (response.status === 206) { // Partial Content
+          resultDiv.innerHTML = `<span class="success">Success!</span> Byte range request succeeded with 206 Partial Content response.<br>` +
+                               `Content-Length: ${response.headers.get('Content-Length')}<br>` +
+                               `Content-Range: ${response.headers.get('Content-Range')}`;
+        } else if (response.ok) {
+          resultDiv.innerHTML = `<span class="error">Warning!</span> Server returned 200 OK instead of 206 Partial Content. ` +
+                               `Byte range requests may not be fully supported.`;
+        } else {
+          resultDiv.innerHTML = `<span class="error">Error!</span> Byte range request returned ${response.status} ${response.statusText}.`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="error">Error!</span> Failed to test byte range: ${error.message}`;
+      }
+    }
+    
+    // Test fetching headers
+    async function testHeaders() {
+      const url = document.getElementById('audioUrl').value || document.getElementById('testUrl').value;
+      const resultDiv = document.getElementById('headersResult');
+      
+      resultDiv.innerHTML = 'Fetching headers...';
+      
+      try {
+        const proxyUrl = `/audio-proxy?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl, { 
+          method: 'HEAD'
+        });
+        
+        const headers = {};
+        response.headers.forEach((value, name) => {
+          headers[name] = value;
+        });
+        
+        resultDiv.innerHTML = JSON.stringify(headers, null, 2);
+      } catch (error) {
+        resultDiv.innerHTML = `Error fetching headers: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html> 

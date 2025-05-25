@@ -82,6 +82,90 @@
         background: rgba(0, 0, 0, 0.5);
         z-index: 998;
       }
+      
+      /* Make sure buttons have pointer cursor */
+      button {
+        cursor: pointer;
+      }
+      
+      /* Notification animation */
+      #playlist-notification {
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+      
+      /* Search dropdown styles */
+      #search_dropdown {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 9999 !important; /* Highest z-index to appear above all elements */
+        position: fixed; /* Fixed position to ensure it's not affected by other elements */
+        background-color: rgba(30, 41, 59, 0.98) !important; /* Darker and more opaque background */
+        backdrop-filter: blur(12px); /* Enhanced blur effect */
+        border: 1px solid rgba(8, 145, 178, 0.2); /* Subtle border */
+      }
+      
+      #search_dropdown:not(.hidden) {
+        animation: dropdownFadeIn 0.2s ease-out;
+        opacity: 1 !important; /* Force full opacity */
+      }
+      
+      @keyframes dropdownFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      /* Search input focus state */
+      [data-search-target="input"].dropdown-active {
+        border-color: rgba(8, 145, 178, 0.6); /* cyan-600 with opacity */
+      }
+      
+      /* Search result item styles */
+      #search_results .search-result-item,
+      #search_results [data-action="click->search#selectSuggestion"] {
+        transition: background-color 0.15s ease;
+        position: relative;
+      }
+      
+      #search_results .search-result-item:hover,
+      #search_results [data-action="click->search#selectSuggestion"]:hover {
+        background-color: rgba(30, 58, 138, 0.4); /* indigo-900 with opacity */
+      }
+      
+      #search_results .search-result-item.selected,
+      #search_results [data-action="click->search#selectSuggestion"].selected {
+        background-color: rgba(8, 145, 178, 0.2); /* cyan-600 with opacity */
+      }
+      
+      /* Add left border indicator for selected item */
+      #search_results .search-result-item.selected::before,
+      #search_results [data-action="click->search#selectSuggestion"].selected::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background-color: rgba(8, 145, 178, 0.8); /* cyan-600 with opacity */
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+      }
+      
+      /* Keyboard navigation hint */
+      #search_dropdown:not(.hidden)::after {
+        content: 'Use ↑↓ to navigate, Enter to select';
+        display: block;
+        text-align: center;
+        padding: 8px;
+        font-size: 11px;
+        color: rgba(165, 180, 252, 0.6); /* indigo-300 with opacity */
+        border-top: 1px solid rgba(79, 70, 229, 0.2); /* indigo-600 with opacity */
+      }
     </style>
   </head>
 

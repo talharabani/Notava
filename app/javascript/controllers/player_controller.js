@@ -253,108 +253,188 @@ export default class extends Controller {
     }
   }
 
-  // Find alternative preview URL for a song when the original is missing
+  /**
+   * Find an alternative preview URL for a song
+   * This method tries different approaches to find a playable audio source
+   * @param {Object} song - The song object
+   * @returns {Promise<string|null>} - Promise resolving to an alternative URL or null
+   */
   async findAlternativePreview(song) {
-    // Try to search for the song by title and artist
-    if (!song.title) {
-      console.error("Cannot find alternative preview: song has no title");
+    if (!song || !song.id) {
+      console.warn("Cannot find alternative preview without a valid song object");
       return null;
     }
     
+    console.log("Finding alternative preview for song:", song.title);
+    
     try {
-      console.log("Searching for alternative preview for:", song.title);
+      // Track whether we're already trying a proxy
+      const isProxyAttempt = song.preview && song.preview.includes('/audio-proxy');
       
-      // Construct a search query - use both title and artist if available
-      let searchQuery = song.title;
-      if (song.artist && song.artist.name) {
-        searchQuery += ` ${song.artist.name}`;
+      // First attempt: Try the audio proxy if the original URL exists and we're not already using it
+      if (song.preview && !isProxyAttempt) {
+        const proxyUrl = `/audio-proxy?url=${encodeURIComponent(song.preview)}`;
+        console.log("Generated proxy URL:", proxyUrl);
+        return proxyUrl;
       }
       
-      // First try: search via API
+      // If we're already using a proxy, try the direct URL instead
+      if (isProxyAttempt) {
+        try {
+          // Extract the original URL from the proxy URL
+          const originalUrlMatch = song.preview.match(/url=([^&]+)/);
+          if (originalUrlMatch && originalUrlMatch[1]) {
+            const originalUrl = decodeURIComponent(originalUrlMatch[1]);
+            console.log("Extracted original URL from proxy:", originalUrl);
+            return originalUrl;
+          }
+        } catch (e) {
+          console.warn("Error extracting original URL from proxy:", e);
+        }
+      }
+      
+      // Second attempt: Try to fetch the song details from our API to get a fresh URL
       try {
-        const response = await fetch(`/music/search?query=${encodeURIComponent(searchQuery)}&format=json`);
-        
+        const response = await fetch(`/music/search?query=${encodeURIComponent(song.title + " " + song.artist.name)}&format=json`);
         if (response.ok) {
           const data = await response.json();
           
-          // Look for a matching song with a preview URL
-          if (data && data.data && data.data.length > 0) {
-            // Find the best match
-            const bestMatch = data.data.find(track => 
-              track.preview && 
-              track.preview.trim() !== '' && 
-              (track.title.toLowerCase().includes(song.title.toLowerCase()) || 
-               song.title.toLowerCase().includes(track.title.toLowerCase()))
-            );
+          // Look for an exact match by ID
+          let foundTrack = null;
+          
+          if (data.tracks && data.tracks.length > 0) {
+            // First try to find by ID
+            foundTrack = data.tracks.find(track => track.id === song.id);
             
-            if (bestMatch) {
-              console.log("Found alternative preview from API search:", bestMatch.preview);
-              return bestMatch.preview;
+            // If not found by ID, try to find by title and artist
+            if (!foundTrack) {
+              foundTrack = data.tracks.find(track => 
+                track.title.toLowerCase() === song.title.toLowerCase() && 
+                track.artist.name.toLowerCase() === song.artist.name.toLowerCase()
+              );
+            }
+            
+            // If still not found, just use the first result
+            if (!foundTrack) {
+              foundTrack = data.tracks[0];
+            }
+            
+            if (foundTrack && foundTrack.preview) {
+              console.log("Found alternative preview URL from API:", foundTrack.preview);
+              // Use the new URL directly first, then try proxying if needed
+              const newUrl = foundTrack.preview;
+              
+              // If we were already using a proxy and it failed, don't proxy the new URL immediately
+              if (isProxyAttempt) {
+                return newUrl;
+              } else {
+                // Otherwise try both options - direct first, then proxy as fallback
+                try {
+                  const checkResponse = await fetch(newUrl, { 
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                  });
+                  
+                  if (checkResponse.ok || checkResponse.status === 0) {
+                    return newUrl;
+                  }
+                } catch (e) {
+                  console.warn("Error checking new URL, will try proxy:", e);
+                }
+                
+                // If direct access fails or throws, try the proxy
+                return `/audio-proxy?url=${encodeURIComponent(newUrl)}`;
+              }
             }
           }
         }
       } catch (apiError) {
-        console.error("API search failed:", apiError);
+        console.warn("Error fetching from API for alternative preview:", apiError);
       }
       
-      // Second try: search for embedded audio elements in the page
-      const audioElements = document.querySelectorAll('audio');
-      for (const audio of audioElements) {
-        if (audio.src && audio.src.trim() !== '') {
-          console.log("Found audio element with src:", audio.src);
-          return audio.src;
-        }
-      }
-      
-      // Third try: check for source elements
-      const sourceElements = document.querySelectorAll('source');
-      for (const source of sourceElements) {
-        if (source.src && source.src.trim() !== '') {
-          console.log("Found source element with src:", source.src);
-          return source.src;
-        }
-      }
-      
-      // Fourth try: check if there are songs already in the queue with URLs
-      if (this.queue && this.queue.length > 0) {
-        const songWithPreview = this.queue.find(queuedSong => 
-          queuedSong.preview && queuedSong.preview.trim() !== ''
-        );
+      // Third attempt: Try different file formats by modifying the original URL
+      if (song.preview && !isProxyAttempt) {
+        let urlToModify = song.preview;
         
-        if (songWithPreview) {
-          console.log("Found preview from queue:", songWithPreview.preview);
-          return songWithPreview.preview;
+        try {
+          // Normalize the URL first
+          const url = new URL(urlToModify);
+          const path = url.pathname;
+          const extension = path.split('.').pop().toLowerCase();
+          
+          // Try alternative formats
+          const alternativeFormats = ['mp3', 'aac', 'ogg', 'wav', 'm4a', 'flac'].filter(format => format !== extension);
+          
+          for (const format of alternativeFormats) {
+            // Only try a few formats to avoid too many requests
+            if (alternativeFormats.indexOf(format) > 2) break;
+            
+            const newPath = path.replace(new RegExp(`\\.${extension}$`), `.${format}`);
+            const alternativeUrl = new URL(newPath, url.origin);
+            console.log(`Trying alternative format: ${format} at ${alternativeUrl.href}`);
+            
+            try {
+              // Try the alternative format via proxy directly since this is a speculative attempt
+              const formatProxyUrl = `/audio-proxy?url=${encodeURIComponent(alternativeUrl.href)}`;
+              return formatProxyUrl;
+            } catch (formatError) {
+              console.warn(`Error creating alternative format URL ${format}:`, formatError);
+            }
+          }
+        } catch (urlError) {
+          console.warn("Error modifying URL for alternative formats:", urlError);
         }
       }
       
-      // Fifth try: look for any song elements on the page with preview data
-      const songElements = document.querySelectorAll('[data-song]');
-      for (const element of songElements) {
+      // Fourth attempt: Try different CDN domains if the URL contains a known pattern
+      if (song.preview && !isProxyAttempt) {
         try {
-          const songData = JSON.parse(element.dataset.song);
-          if (songData.preview && songData.preview.trim() !== '') {
-            console.log("Found preview from page song element:", songData.preview);
-            return songData.preview;
+          // Replace the CDN domain pattern with alternatives
+          const cdnPatterns = [
+            { from: 'cdns-preview-', to: 'cdns-alt-preview-' },
+            { from: 'cdns-preview-', to: 'e-cdns-proxy-' },
+            { from: 'e-cdns-', to: 'cdns-' },
+            { from: 'cdnt-preview', to: 'cdns-preview' }
+          ];
+          
+          for (const pattern of cdnPatterns) {
+            if (song.preview.includes(pattern.from)) {
+              const altCdnUrl = song.preview.replace(pattern.from, pattern.to);
+              console.log(`Trying alternative CDN URL: ${altCdnUrl}`);
+              
+              // Try via proxy since this is a speculative attempt
+              const cdnProxyUrl = `/audio-proxy?url=${encodeURIComponent(altCdnUrl)}`;
+              return cdnProxyUrl;
+            }
+          }
+        } catch (cdnError) {
+          console.warn("Error trying alternative CDNs:", cdnError);
+        }
+      }
+      
+      // Fifth attempt: If we still don't have anything and we're not already in a proxy attempt,
+      // try the proxy with the original URL anyway as a last resort
+      if (song.preview && !isProxyAttempt) {
+        return `/audio-proxy?url=${encodeURIComponent(song.preview)}`;
+      } else if (isProxyAttempt) {
+        // If we're already in a proxy attempt that failed, try a direct connection
+        try {
+          // Extract the original URL from the proxy URL
+          const originalUrlMatch = song.preview.match(/url=([^&]+)/);
+          if (originalUrlMatch && originalUrlMatch[1]) {
+            const originalUrl = decodeURIComponent(originalUrlMatch[1]);
+            console.log("Last resort: trying original URL directly:", originalUrl);
+            return originalUrl;
           }
         } catch (e) {
-          console.error("Error parsing song data from element:", e);
+          console.warn("Error extracting original URL in last resort:", e);
         }
       }
       
-      // Sixth try: look for elements with data-preview, data-audio, etc.
-      const elementsWithData = document.querySelectorAll('[data-preview], [data-audio], [data-src], [data-url], [data-track-url]');
-      for (const el of elementsWithData) {
-        if (el.dataset.preview) return el.dataset.preview;
-        if (el.dataset.audio) return el.dataset.audio;
-        if (el.dataset.src) return el.dataset.src;
-        if (el.dataset.url) return el.dataset.url;
-        if (el.dataset.trackUrl) return el.dataset.trackUrl;
-      }
-      
-      console.log("No alternative preview found");
+      console.warn("Could not find any alternative preview for:", song.title);
       return null;
     } catch (error) {
-      console.error("Error finding alternative preview:", error);
+      console.error("Error in findAlternativePreview:", error);
       return null;
     }
   }
@@ -390,8 +470,8 @@ export default class extends Controller {
     if (!song || !song.id) return;
     
     // Remove active class from all song elements
-    document.querySelectorAll('.song-active').forEach(element => {
-      element.classList.remove('song-active');
+    document.querySelectorAll('.song-active, .playing').forEach(element => {
+      element.classList.remove('song-active', 'playing');
     });
     
     // Add active class to matching song elements
@@ -400,7 +480,23 @@ export default class extends Controller {
         try {
           const songData = JSON.parse(element.dataset.song);
           if (songData.id === song.id) {
-            element.classList.add('song-active');
+            element.classList.add('song-active', 'playing');
+            
+            // If this element is in a scrollable container, scroll to it
+            const scrollContainer = element.closest('.scrollable-container, .overflow-auto, [style*="overflow"]');
+            if (scrollContainer) {
+              const elementTop = element.offsetTop;
+              const containerScrollTop = scrollContainer.scrollTop;
+              const containerHeight = scrollContainer.clientHeight;
+              
+              // Only scroll if the element is outside the visible area
+              if (elementTop < containerScrollTop || elementTop > containerScrollTop + containerHeight) {
+                scrollContainer.scrollTo({
+                  top: elementTop - containerHeight / 2,
+                  behavior: 'smooth'
+                });
+              }
+            }
           }
         } catch (e) {
           console.error("Error parsing song data:", e);
@@ -409,6 +505,11 @@ export default class extends Controller {
     } catch (e) {
       console.error("Error updating active elements:", e);
     }
+    
+    // Also update any elements with the current song ID as a data attribute
+    document.querySelectorAll(`[data-song-id="${song.id}"]`).forEach(element => {
+      element.classList.add('song-active', 'playing');
+    });
   }
 
   playAudio(src) {
@@ -501,14 +602,14 @@ export default class extends Controller {
       // Error callback
       (error) => {
         console.error("All playback attempts failed:", error);
-        this.handleAudioError();
+        this.handleAudioError(error);
         this.showNotification("Could not play audio. Try tapping the player.", 5000);
       }
     );
   }
 
-  handleAudioError() {
-    console.log("handleAudioError method called");
+  handleAudioError(error) {
+    console.log("handleAudioError method called", error);
     this.isPlayingValue = false;
     globalIsPlaying = false;
     this.updatePlayPauseIcon();
@@ -516,8 +617,111 @@ export default class extends Controller {
     const songTitle = this.element.querySelector('.song-title');
     const artistName = this.element.querySelector('.artist-name');
     
-    if (songTitle) songTitle.textContent = 'Error playing song';
-    if (artistName) artistName.textContent = 'Please try another song';
+    let errorMessage = 'Error playing song';
+    let actionMessage = 'Please try another song';
+    
+    // Provide more specific error messages based on the error type
+    if (error) {
+      if (error.name === 'NotSupportedError') {
+        errorMessage = 'Audio format not supported';
+        actionMessage = 'Try a different song or format';
+        
+        // Log detailed information for troubleshooting
+        console.error('NotSupportedError details:', {
+          src: this.audio ? this.audio.src : 'No audio element',
+          currentSong: this.currentSong ? this.currentSong.title : 'No current song',
+          browser: navigator.userAgent
+        });
+        
+        // Try to recover by finding an alternative source or format
+        if (this.currentSong && this.currentSong.id) {
+          this.findAlternativePreview(this.currentSong)
+            .then(alternativeUrl => {
+              if (alternativeUrl) {
+                console.log("Found alternative preview URL:", alternativeUrl);
+                // Attempt to play the alternative URL
+                this.playAudio(alternativeUrl);
+              } else {
+                // No alternative found, show notification
+                this.showNotification("This audio format isn't supported by your browser. Try another song.", 5000);
+              }
+            })
+            .catch(err => {
+              console.error("Error finding alternative preview:", err);
+              this.showNotification("Couldn't play this song. Please try another.", 5000);
+            });
+        }
+      } else if (error.name === 'AbortError') {
+        errorMessage = 'Playback was interrupted';
+        actionMessage = 'Please try again';
+      } else if (error.name === 'NetworkError' || (error.message && error.message.includes('network'))) {
+        errorMessage = 'Network error';
+        actionMessage = 'Check your connection and try again';
+        
+        // Retry with the proxy if the current URL isn't already using it
+        if (this.audio && this.audio.src && !this.audio.src.includes('/audio-proxy')) {
+          const originalUrl = this.audio.src;
+          console.log("Network error - trying to play through audio proxy:", originalUrl);
+          
+          // Use our proxy endpoint
+          const proxyUrl = `/audio-proxy?url=${encodeURIComponent(originalUrl)}`;
+          
+          // Small delay before retry
+          setTimeout(() => {
+            this.playAudio(proxyUrl);
+            this.showNotification("Retrying playback via proxy...");
+          }, 500);
+          
+          return; // Exit early as we're handling this automatically
+        }
+      } else if (error.status === 500 || (this.audio && this.audio.src && this.audio.src.includes('/audio-proxy'))) {
+        // Handle 500 errors from our proxy specifically
+        errorMessage = 'Server proxy error';
+        actionMessage = 'We\'ll try an alternative source';
+        
+        // If this is a proxy error, try to use the direct URL instead
+        if (this.audio && this.audio.src && this.audio.src.includes('/audio-proxy')) {
+          // Extract the original URL from the proxy URL
+          const urlParam = new URLSearchParams(new URL(this.audio.src).search).get('url');
+          
+          if (urlParam) {
+            console.log("Proxy error - trying direct playback:", urlParam);
+            
+            // Try direct playback with a small delay
+            setTimeout(() => {
+              this.playAudio(urlParam);
+              this.showNotification("Trying direct playback...");
+            }, 500);
+            
+            return; // Exit early as we're handling this automatically
+          }
+        }
+        
+        // If we're here, try to find an alternative preview
+        if (this.currentSong && this.currentSong.id) {
+          this.findAlternativePreview(this.currentSong)
+            .then(alternativeUrl => {
+              if (alternativeUrl) {
+                console.log("Found alternative preview after proxy error:", alternativeUrl);
+                // Attempt to play the alternative URL
+                this.playAudio(alternativeUrl);
+              }
+            })
+            .catch(() => {
+              // Already showing error message, no need for additional notification
+            });
+        }
+      } else {
+        // Generic error with error name if available
+        errorMessage = `Playback error: ${error.name || 'Unknown'}`;
+      }
+    }
+    
+    if (songTitle) songTitle.textContent = errorMessage;
+    if (artistName) artistName.textContent = actionMessage;
+    
+    // Show notification for better user feedback
+    this.showNotification(`${errorMessage}. ${actionMessage}`, 4000);
   }
 
   handleAudioAbort() {
@@ -581,19 +785,50 @@ export default class extends Controller {
     }
   }
 
-  previous() {
-    console.log("previous method called");
-    if (this.currentIndex > 0) {
-      this.currentIndex--;
-      this.playSongFromQueue();
-    }
-  }
-
   next() {
     console.log("next method called");
     if (this.currentIndex < this.queue.length - 1) {
       this.currentIndex++;
       this.playSongFromQueue();
+    } else {
+      console.log("End of queue reached, looking for more songs");
+      this.findMoreSongs()
+        .then(success => {
+          if (success && this.queue.length > this.currentIndex + 1) {
+            this.currentIndex++;
+            this.playSongFromQueue();
+          } else {
+            console.log("No more songs available");
+            this.showNotification("End of playlist reached");
+          }
+        })
+        .catch(error => {
+          console.error("Error finding more songs:", error);
+        });
+    }
+  }
+
+  previous() {
+    console.log("previous method called");
+    
+    // If we're more than 3 seconds into the song, restart it instead of going to previous
+    if (this.audio && this.audio.currentTime > 3) {
+      console.log("Restarting current song");
+      this.audio.currentTime = 0;
+      return;
+    }
+    
+    if (this.currentIndex > 0) {
+      this.currentIndex--;
+      this.playSongFromQueue();
+    } else {
+      console.log("Already at the beginning of queue");
+      this.showNotification("Beginning of playlist reached");
+      
+      // Just restart the current song
+      if (this.audio) {
+        this.audio.currentTime = 0;
+      }
     }
   }
 
@@ -763,52 +998,100 @@ export default class extends Controller {
           this.currentIndex = 0;
           this.playSongFromQueue();
         } else {
-          console.log("End of queue reached, stopping playback");
-          // Try to find recommended songs based on the last played song
-          this.findRecommendedSongs()
-            .then(recommendedSongs => {
-              if (recommendedSongs.length > 0) {
-                console.log("Found recommended songs, adding to queue");
-                // Add recommended songs to the queue
-                recommendedSongs.forEach(song => this.addToQueue(song));
-                // Play the first recommended song
-                this.next();
+          console.log("End of queue reached, finding more songs");
+          
+          // Try to find more songs to play
+          this.findMoreSongs()
+            .then(success => {
+              if (success && this.queue.length > this.currentIndex + 1) {
+                this.currentIndex++;
+                this.playSongFromQueue();
               } else {
-                // No recommendations, just stop
+                console.log("No more songs found, stopping playback");
                 this.isPlayingValue = false;
+                globalIsPlaying = false;
                 this.updatePlayPauseIcon();
+                this.showNotification("End of playlist reached");
               }
             })
             .catch(error => {
-              console.error("Error finding recommended songs:", error);
+              console.error("Error finding more songs:", error);
               this.isPlayingValue = false;
+              globalIsPlaying = false;
               this.updatePlayPauseIcon();
             });
         }
       }
     } else {
-      console.log("No more songs in queue");
-      // Try to find other songs in the current view to add to the queue
-      this.findSongsInCurrentView()
-        .then(songs => {
-          if (songs.length > 0) {
-            console.log("Found songs in current view, adding to queue");
-            // Add songs to the queue
-            songs.forEach(song => this.addToQueue(song));
-            // Play the first found song
-            this.next();
+      console.log("No more songs in queue, finding more");
+      
+      this.findMoreSongs()
+        .then(success => {
+          if (success && this.queue.length > 1) {
+            this.currentIndex = 1; // Skip the song that just ended
+            this.playSongFromQueue();
           } else {
-            // No more songs found, just stop
+            console.log("No more songs found, stopping playback");
             this.isPlayingValue = false;
+            globalIsPlaying = false;
             this.updatePlayPauseIcon();
           }
         })
         .catch(error => {
-          console.error("Error finding songs in current view:", error);
+          console.error("Error finding more songs:", error);
           this.isPlayingValue = false;
+          globalIsPlaying = false;
           this.updatePlayPauseIcon();
         });
     }
+  }
+
+  // New method to find more songs from the page or via API
+  async findMoreSongs() {
+    console.log("Finding more songs to play");
+    
+    // First try to find songs in the current view
+    const songsInView = await this.findSongsInCurrentView();
+    if (songsInView.length > 0) {
+      console.log("Found songs in current view, adding to queue:", songsInView.length);
+      songsInView.forEach(song => this.queue.push(song));
+      this.saveQueue();
+      return true;
+    }
+    
+    // Then try to find recommended songs based on the current song
+    const recommendedSongs = await this.findRecommendedSongs();
+    if (recommendedSongs.length > 0) {
+      console.log("Found recommended songs, adding to queue:", recommendedSongs.length);
+      recommendedSongs.forEach(song => this.queue.push(song));
+      this.saveQueue();
+      return true;
+    }
+    
+    // Try to fetch featured songs from API
+    try {
+      console.log("Fetching featured songs from API");
+      const response = await fetch('/music/chart?format=json');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.tracks && data.tracks.length > 0) {
+          console.log("Found featured songs from API, adding to queue:", data.tracks.length);
+          data.tracks.forEach(track => {
+            // Only add if not already in queue
+            if (!this.queue.find(song => song.id === track.id)) {
+              this.queue.push(track);
+            }
+          });
+          this.saveQueue();
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching featured songs:", error);
+    }
+    
+    // If all else fails, return false
+    return false;
   }
 
   // Find recommended songs based on the current song

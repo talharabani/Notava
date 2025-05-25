@@ -1,0 +1,176 @@
+/**
+ * Z-Index Fixes for Notava
+ * 
+ * This stylesheet specifically addresses z-index issues throughout the application,
+ * particularly with dropdown menus and search results.
+ */
+
+/* General z-index layering system */
+:root {
+  --z-background: 1;
+  --z-content: 10;
+  --z-navigation: 100;
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-overlay: 3000;
+  --z-tooltip: 4000;
+  --z-notification: 5000;
+}
+
+/* Ensure search dropdown appears above all other content */
+.search-dropdown,
+.search-results,
+.search-results-container,
+#search-results {
+  position: absolute !important;
+  z-index: var(--z-dropdown) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Set proper stacking context for page sections */
+header, nav, main, footer {
+  position: relative;
+  z-index: var(--z-content);
+}
+
+/* Navigation should be above regular content */
+.navigation, 
+.navbar,
+.sidebar {
+  position: relative;
+  z-index: var(--z-navigation);
+}
+
+/* Modal dialogs and overlays */
+.modal,
+.dialog,
+.overlay,
+.cover {
+  position: fixed;
+  z-index: var(--z-modal);
+}
+
+/* Make sure the player stays at the bottom but above content */
+#player,
+.player-container,
+.audio-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-navigation);
+}
+
+/* Notifications and tooltips */
+.tooltip,
+.notification,
+#player-notification {
+  z-index: var(--z-notification) !important;
+}
+
+/* Fix for dropdowns in the discover page */
+.discover-container .dropdown-menu,
+.discover-page .dropdown-menu {
+  z-index: var(--z-dropdown) !important;
+}
+
+/* Specific fix for search controller dropdown */
+body.has-open-dropdown {
+  overflow: visible !important;
+}
+
+/* Fix for search results container */
+.search-results-container {
+  isolation: isolate;
+}
+
+/* Fix for any absolutely positioned elements */
+[style*="position: absolute"] {
+  z-index: auto;
+}
+
+/* Ensure dropdowns in album/genre/playlist views appear correctly */
+.album-details .dropdown-menu,
+.genre-details .dropdown-menu,
+.playlist-details .dropdown-menu {
+  z-index: calc(var(--z-dropdown) + 100) !important;
+}
+
+/* Fix for any potential conflicts with Bootstrap z-index values */
+.dropdown-menu {
+  z-index: 1050 !important;
+}
+
+/* Fix for dropdowns appearing behind modals */
+.modal-open .dropdown-menu {
+  z-index: calc(var(--z-modal) + 100) !important;
+}
+
+/* Fix for iOS/Safari specific z-index issues */
+@supports (-webkit-touch-callout: none) {
+  .dropdown-menu,
+  .search-results {
+    transform: translateZ(0);
+  }
+}
+
+/* Fix for search dropdown appearing behind featured section on discover page */
+
+/* Direct approach: forcefully fix the featured section z-index */
+.discover-page .relative.rounded-2xl.overflow-hidden,
+body .min-h-screen .py-6 .mb-10 .relative.rounded-2xl.overflow-hidden {
+  z-index: 1 !important; 
+  transform: translateZ(0); /* Create a new stacking context */
+}
+
+.discover-page .relative.rounded-2xl.overflow-hidden *,
+body .min-h-screen .py-6 .mb-10 .relative.rounded-2xl.overflow-hidden * {
+  z-index: auto !important; /* Reset all z-index inside */
+}
+
+/* Fix for specific z-10 and z-20 elements */
+.discover-page .relative.rounded-2xl.overflow-hidden .z-10,
+.discover-page .relative.rounded-2xl.overflow-hidden .z-20,
+body .min-h-screen .py-6 .mb-10 .relative.rounded-2xl.overflow-hidden .z-10,
+body .min-h-screen .py-6 .mb-10 .relative.rounded-2xl.overflow-hidden .z-20 {
+  z-index: 5 !important;
+}
+
+/* Ensure any fixed elements in the app don't create stacking contexts above our dropdown */
+.fixed, 
+[style*="position: fixed"],
+[style*="position:fixed"] {
+  z-index: 1000 !important; /* High but below our dropdown */
+}
+
+/* Super powerful dropdown styles */
+.search-dropdown-detached,
+html body #search_dropdown {
+  z-index: 2147483647 !important; /* Maximum possible z-index */
+  position: fixed !important;
+  transform: none !important; /* Prevent transform from creating a new stacking context */
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  top: auto !important; /* Will be set by JS */
+  left: auto !important; /* Will be set by JS */
+}
+
+/* When body has this class, ensure nothing can overlap the dropdown */
+body.search-dropdown-active .search-dropdown-detached,
+body.search-dropdown-active #search_dropdown {
+  z-index: 2147483647 !important;
+}
+
+/* Create a backdrop when search is active */
+body.search-dropdown-active::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2147483646 !important; /* Just below the dropdown */
+  pointer-events: none;
+} 
